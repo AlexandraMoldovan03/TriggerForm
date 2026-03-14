@@ -3,6 +3,7 @@
     "name": "TriggerForm",
     "slug": "triggerform",
     "scheme": "triggerform",
+    "platforms": ["ios", "android", "web"],
     "plugins": [
       "expo-router",
       "expo-asset"
