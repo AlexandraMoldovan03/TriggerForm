@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "TriggerPointApp",
+    "slug": "trigger-point-app",
+    "version": "1.0.0",
+    "plugins": [
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Used to detect trigger points using computer vision",
+          "enableMicrophonePermission": true,
+          "microphonePermissionText": "Required by the camera framework"
+        }
+      ],
+      "expo-dev-client",
+      "react-native-mediapipe-posedetection"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourname.triggerpointapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to detect trigger points using computer vision",
+        "NSMicrophoneUsageDescription": "Required by the camera framework",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.yourname.triggerpointapp",
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "726f9f76-1d8d-4428-ba64-17e1b8f4c5bc"
+      }
+    }
+  }
+}
