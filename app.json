@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "TriggerForm",
+    "slug": "triggerform",
+    "scheme": "triggerform",
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ]
+  }
+}

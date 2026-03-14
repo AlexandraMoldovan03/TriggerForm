@@ -1,0 +1,17 @@
+export const C = {
+  bg:         "#0A0E1A",
+  surface:    "#111827",
+  card:       "#1A2235",
+  border:     "#1E2D45",
+  accent:     "#E94560",
+  accentSoft: "#FF6B8A",
+  blue:       "#3B82F6",
+  blueGlow:   "#1D4ED8",
+  teal:       "#14B8A6",
+  text:       "#F0F4FF",
+  textMuted:  "#8899BB",
+  textDim:    "#4A5568",
+  green:      "#10B981",
+  amber:      "#F59E0B",
+  overlay:    "rgba(0,0,0,0.6)",
+} as const;
