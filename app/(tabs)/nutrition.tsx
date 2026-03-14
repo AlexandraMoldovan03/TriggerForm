@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
@@ -28,6 +29,7 @@ const SPORTS = [
 type AIResult = {
   summary: string;
   status: 'good' | 'needs_improvement' | 'poor';
+  photoFindings?: string[];
   nutrients: { label: string; value: string }[];
   meals: { title: string; description: string; timing: string }[];
   tip: string;
@@ -46,7 +48,7 @@ export default function NutritionScreen() {
   const [water, setWater] = useState(1.5);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AIResult | null>(null);
-const keyPreview = GEMINI_KEY ? GEMINI_KEY.slice(0, 10) : 'undefined';
+
   const addFood = () => {
     if (!foodInput.trim()) return;
     setFoods([...foods, foodInput.trim()]);
@@ -77,33 +79,57 @@ const keyPreview = GEMINI_KEY ? GEMINI_KEY.slice(0, 10) : 'undefined';
     }
   };
 
+  const getMimeType = (uri: string) => {
+    const lower = uri.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  };
+
   const runAI = async () => {
-  if (!GEMINI_KEY) {
-    Alert.alert(
-      'Missing API key',
-      'Add EXPO_PUBLIC_GEMINI_API_KEY in your .env file and restart Expo.'
-    );
-    return;
-  }
+    if (!GEMINI_KEY) {
+      Alert.alert(
+        'Missing API key',
+        'Add EXPO_PUBLIC_GEMINI_API_KEY in your .env file and restart Expo.'
+      );
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  const prompt = `
-You are a sports nutrition coach.
-Analyze this athlete's recovery needs.
+    try {
+      let parts: any[] = [];
+
+      const prompt = `
+You are an AI sports nutrition coach.
+
+Your job:
+1. If a meal photo is attached, identify what foods are visible.
+2. Estimate portions roughly, only if visually obvious.
+3. Combine the photo findings with the foods manually entered by the user.
+4. Based on sport, intensity, duration, hydration, and meals, suggest what is still needed for recovery.
 
 Athlete info:
 - Sport: ${sport}
 - Intensity: ${intensity}
 - Duration: ${duration} minutes
 - Water: ${water}L
-- Foods eaten today: ${foods.join(', ') || 'nothing logged'}
-- Meal photo uploaded: ${mealImage ? 'yes' : 'no'}
+- Manual food entries: ${foods.join(', ') || 'none'}
 
-Return ONLY valid JSON in this exact shape:
+Rules:
+- Be practical and realistic.
+- Do not pretend to be medically precise.
+- If the photo is unclear, say so briefly.
+- Focus on recovery after training.
+- Return ONLY valid JSON.
+- No markdown.
+- No extra text before or after JSON.
+
+Return EXACTLY this JSON shape:
 {
   "summary": "2-3 short sentences",
   "status": "good",
+  "photoFindings": ["item 1", "item 2", "item 3"],
   "nutrients": [
     {"label":"Protein","value":"..."},
     {"label":"Carbs","value":"..."},
@@ -118,66 +144,80 @@ Return ONLY valid JSON in this exact shape:
   "tip": "one short recovery tip"
 }
 
-Allowed values for status:
+Allowed status values:
 - "good"
 - "needs_improvement"
 - "poor"
 `;
 
-  try {
-   const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
+      parts.push({ text: prompt });
+
+      if (mealImage) {
+        const base64Image = await FileSystem.readAsStringAsync(mealImage, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        parts.push({
+          inline_data: {
+            mime_type: getMimeType(mealImage),
+            data: base64Image,
+          },
+        });
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
         {
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-      },
-    }),
-  }
-);
-
-    const data = await response.json();
-
-    console.log('GEMINI RAW RESPONSE:', JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      Alert.alert(
-        'API error',
-        data?.error?.message || 'Gemini returned an error.'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts,
+              },
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
       );
-      return;
+
+      const data = await response.json();
+
+      console.log('GEMINI RAW RESPONSE:', JSON.stringify(data, null, 2));
+
+      if (!response.ok) {
+        Alert.alert(
+          'API error',
+          data?.error?.message || 'Gemini returned an error.'
+        );
+        return;
+      }
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        Alert.alert('AI error', 'Gemini returned an empty response.');
+        return;
+      }
+
+      const parsed = JSON.parse(text);
+
+      setResult(parsed);
+      setStep(3);
+    } catch (error: any) {
+      console.log('RUN AI ERROR:', error);
+      Alert.alert(
+        'Error',
+        error?.message || 'Could not analyze nutrition.'
+      );
+    } finally {
+      setLoading(false);
     }
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      Alert.alert('AI error', 'Gemini returned an empty response.');
-      return;
-    }
-
-    const parsed = JSON.parse(text);
-
-    setResult(parsed);
-    setStep(3);
-  } catch (error: any) {
-    console.log('RUN AI ERROR:', error);
-    Alert.alert(
-      'Error',
-      error?.message || 'Could not analyze nutrition.'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const reset = () => {
     setSport('');
@@ -200,9 +240,6 @@ Allowed values for status:
   return (
     <View style={st.container}>
       <View style={st.header}>
-        <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>
-  KEY: {keyPreview}
-</Text>
         <Text style={st.headerTitle}>Nutrition Coach</Text>
         <View style={st.progTrack}>
           <View
@@ -317,7 +354,7 @@ Allowed values for status:
           {loading ? (
             <View style={st.loadingBox}>
               <ActivityIndicator size="large" color="#1fd67a" />
-              <Text style={st.loadingText}>Analyzing recovery...</Text>
+              <Text style={st.loadingText}>Analyzing meal and recovery...</Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -345,6 +382,19 @@ Allowed values for status:
             <Text style={st.cardTitle}>Assessment</Text>
             <Text style={st.cardTxt}>{result.summary}</Text>
           </View>
+
+          {result.photoFindings && result.photoFindings.length > 0 ? (
+            <>
+              <Text style={st.secTitle}>AI DETECTED FROM PHOTO</Text>
+              <View style={st.tags}>
+                {result.photoFindings.map((item, index) => (
+                  <View key={index} style={st.tag}>
+                    <Text style={st.tagTxt}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <Text style={st.secTitle}>NUTRIENT NEEDS</Text>
           <View style={st.nutGrid}>
