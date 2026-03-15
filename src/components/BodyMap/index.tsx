@@ -6,18 +6,12 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import Svg, {
-  Path,
-  Circle,
-  Ellipse,
-  Defs,
-  RadialGradient,
-  Stop,
-} from "react-native-svg";
+import Svg, { Circle, G } from "react-native-svg";
 
 import { C } from "../../utils/colors";
 import { REGIONS, TRIGGER_POINTS } from "../../data";
 import type { BodyRegionId, BodyView, TriggerPoint3D } from "../../types";
+import { BodyBack, BodyFront } from "./HumanBodySVG";
 
 function severityColor(emoji: string): string {
   if (emoji === "🔴") return C.accent;
@@ -26,105 +20,162 @@ function severityColor(emoji: string): string {
   return C.green;
 }
 
-type BodyPath = {
+type Hotspot = {
   id: BodyRegionId;
   view: BodyView;
-  d: string;
+  left: string;
+  top: string;
+  width: string;
+  height: string;
 };
 
-const BODY_PATHS: BodyPath[] = [
+const HOTSPOTS: Hotspot[] = [
   // FRONT
   {
     id: "pec_left",
     view: "front",
-    d: "M83,90 Q96,78 112,88 L112,130 Q96,136 82,126 Z",
+    left: "33%",
+    top: "22%",
+    width: "14%",
+    height: "12%",
   },
   {
     id: "pec_right",
     view: "front",
-    d: "M118,88 Q134,78 147,90 L148,126 Q134,136 118,130 Z",
+    left: "52%",
+    top: "22%",
+    width: "14%",
+    height: "12%",
   },
 
   // BACK
   {
     id: "upper_trap_left",
     view: "back",
-    d: "M86,78 Q100,66 116,78 L112,100 Q98,104 86,96 Z",
+    left: "30%",
+    top: "16%",
+    width: "16%",
+    height: "10%",
   },
   {
     id: "upper_trap_right",
     view: "back",
-    d: "M144,78 Q160,66 174,78 L174,96 Q162,104 148,100 Z",
+    left: "54%",
+    top: "16%",
+    width: "16%",
+    height: "10%",
   },
   {
     id: "levator_left",
     view: "back",
-    d: "M108,82 Q116,76 122,88 L118,114 Q108,112 102,100 Z",
+    left: "42%",
+    top: "18%",
+    width: "10%",
+    height: "10%",
   },
   {
     id: "levator_right",
     view: "back",
-    d: "M138,88 Q144,76 152,82 L158,100 Q152,112 142,114 Z",
+    left: "50%",
+    top: "18%",
+    width: "10%",
+    height: "10%",
   },
   {
     id: "rhomboid_left",
     view: "back",
-    d: "M100,116 Q112,108 122,120 L120,154 Q108,158 96,146 Z",
+    left: "34%",
+    top: "29%",
+    width: "16%",
+    height: "13%",
   },
   {
     id: "rhomboid_right",
     view: "back",
-    d: "M138,120 Q148,108 160,116 L164,146 Q152,158 140,154 Z",
+    left: "50%",
+    top: "29%",
+    width: "16%",
+    height: "13%",
   },
   {
     id: "lumbar_left",
     view: "back",
-    d: "M108,158 Q118,154 124,164 L122,206 Q112,210 104,198 Z",
+    left: "38%",
+    top: "43%",
+    width: "13%",
+    height: "12%",
   },
   {
     id: "lumbar_right",
     view: "back",
-    d: "M136,164 Q142,154 152,158 L156,198 Q148,210 138,206 Z",
+    left: "49%",
+    top: "43%",
+    width: "13%",
+    height: "12%",
   },
   {
     id: "glute_med_left",
     view: "back",
-    d: "M102,214 Q118,206 128,220 L126,252 Q110,258 98,244 Z",
+    left: "35%",
+    top: "55%",
+    width: "16%",
+    height: "12%",
   },
   {
     id: "glute_med_right",
     view: "back",
-    d: "M132,220 Q142,206 158,214 L162,244 Q150,258 134,252 Z",
+    left: "49%",
+    top: "55%",
+    width: "16%",
+    height: "12%",
   },
   {
     id: "piriformis_left",
     view: "back",
-    d: "M114,236 Q124,232 128,242 L126,260 Q116,262 110,252 Z",
+    left: "40%",
+    top: "60%",
+    width: "10%",
+    height: "8%",
   },
   {
     id: "piriformis_right",
     view: "back",
-    d: "M132,242 Q136,232 146,236 L150,252 Q144,262 134,260 Z",
+    left: "50%",
+    top: "60%",
+    width: "10%",
+    height: "8%",
   },
   {
     id: "hamstring_left",
     view: "back",
-    d: "M108,262 L128,260 L126,314 Q116,320 106,314 Z",
+    left: "39%",
+    top: "69%",
+    width: "12%",
+    height: "16%",
   },
   {
     id: "hamstring_right",
     view: "back",
-    d: "M132,260 L152,262 L154,314 Q144,320 134,314 Z",
+    left: "50%",
+    top: "69%",
+    width: "12%",
+    height: "16%",
   },
   {
     id: "calf_left",
     view: "back",
-    d: "M108,314 L126,312 L124,346 Q114,350 106,346 Z",
+    left: "40%",
+    top: "84%",
+    width: "10%",
+    height: "11%",
   },
   {
     id: "calf_right",
     view: "back",
-    d: "M134,312 L152,314 L154,346 Q146,350 136,346 Z",
+    left: "51%",
+    top: "84%",
+    width: "10%",
+    height: "11%",
   },
 ];
 
@@ -132,121 +183,92 @@ interface BodySVGProps {
   selectedRegion: BodyRegionId | null;
   onSelectRegion: (id: BodyRegionId) => void;
   selectedView: BodyView;
+  selectedSubRegion?: string | null;
 }
 
 export function BodySVG({
   selectedRegion,
   onSelectRegion,
   selectedView,
+  selectedSubRegion = null,
 }: BodySVGProps) {
+  const visibleRegions = REGIONS.filter((r) => r.view === selectedView);
+  const visibleHotspots = HOTSPOTS.filter((h) => h.view === selectedView);
+
   const tps: TriggerPoint3D[] = selectedRegion
     ? TRIGGER_POINTS.filter(
-        (tp) => tp.regionId === selectedRegion && tp.view === selectedView
+        (tp) =>
+          tp.regionId === selectedRegion &&
+          tp.view === selectedView &&
+          (selectedSubRegion === null || tp.subRegionId === selectedSubRegion)
       )
     : [];
 
-  const visiblePaths = BODY_PATHS.filter((p) => p.view === selectedView);
-
-  const visibleRegions = REGIONS.filter((r) => r.view === selectedView);
+  // SVG coordinate mapping: tp.x% → svgX = tp.x/100*320, tp.y% → svgY = tp.y/100*600
+  const SVG_W = 320;
+  const SVG_H = 600;
 
   return (
-    <Svg viewBox="0 0 260 380" width="100%" height="100%">
-      <Defs>
-        <RadialGradient id="bodyGlow" cx="50%" cy="50%" r="50%">
-          <Stop offset="0%" stopColor="#1D4ED8" stopOpacity="0.15" />
-          <Stop offset="100%" stopColor="#0A0E1A" stopOpacity="0" />
-        </RadialGradient>
-      </Defs>
+    <View style={styles.bodyCanvas}>
+      {/* ── realistic anatomical body ── */}
+      {selectedView === "back" ? <BodyBack /> : <BodyFront />}
 
-      <Ellipse cx="130" cy="190" rx="95" ry="145" fill="url(#bodyGlow)" />
+      {/* ── hotspot tap zones (absolutely positioned) ── */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {visibleHotspots.map((hotspot) => {
+          const regionMeta = visibleRegions.find((r) => r.id === hotspot.id);
+          const col = severityColor(regionMeta?.emoji ?? "🟢");
+          const isSelected = selectedRegion === hotspot.id;
 
-      {/* siluetă bază */}
-      <Ellipse
-        cx="130"
-        cy="38"
-        rx="24"
-        ry="28"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-      <Path
-        d="M98,66 Q98,54 162,66 L166,220 Q130,226 94,220 Z"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-      <Path
-        d="M72,84 L98,84 L98,182 Q84,186 72,180 Z"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-      <Path
-        d="M162,84 L188,84 L188,180 Q176,186 162,182 Z"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-      <Path
-        d="M104,220 L128,220 L126,350 Q116,356 106,350 Z"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-      <Path
-        d="M132,220 L156,220 L158,350 Q148,356 138,350 Z"
-        fill="#1E293B"
-        stroke="#334155"
-        strokeWidth="1.5"
-      />
-
-      {selectedView !== "front" && (
-        <Path
-          d="M130,66 L130,220"
-          stroke="#334155"
-          strokeWidth="0.6"
-          strokeDasharray="4,4"
-        />
-      )}
-
-      {visiblePaths.map((regionPath) => {
-        const regionMeta = visibleRegions.find((r) => r.id === regionPath.id);
-        const col = severityColor(regionMeta?.emoji ?? "🟢");
-        const isSelected = selectedRegion === regionPath.id;
-
-        return (
-          <Path
-            key={regionPath.id}
-            d={regionPath.d}
-            fill={isSelected ? col + "66" : col + "22"}
-            stroke={isSelected ? col : col + "88"}
-            strokeWidth={isSelected ? 2.4 : 1.1}
-            onPress={() => onSelectRegion(regionPath.id)}
-          />
-        );
-      })}
-
-      {tps.map((tp) => {
-        const cx = (tp.x * 260) / 100;
-        const cy = (tp.y * 380) / 100;
-
-        return (
-          <React.Fragment key={tp.id}>
-            <Circle cx={cx} cy={cy} r={6} fill={C.accent} opacity={0.95} />
-            <Circle
-              cx={cx}
-              cy={cy}
-              r={11}
-              fill="none"
-              stroke={C.accent}
-              strokeWidth={1.5}
-              opacity={0.4}
+          return (
+            <TouchableOpacity
+              key={`${hotspot.view}-${hotspot.id}`}
+              onPress={() => onSelectRegion(hotspot.id)}
+              activeOpacity={0.85}
+              style={[
+                styles.hotspot,
+                {
+                  left: hotspot.left,
+                  top: hotspot.top,
+                  width: hotspot.width,
+                  height: hotspot.height,
+                  backgroundColor: isSelected ? col + "44" : col + "18",
+                  borderColor: isSelected ? col : col + "66",
+                  borderWidth: isSelected ? 2 : 1,
+                } as any,
+              ]}
             />
-          </React.Fragment>
-        );
-      })}
-    </Svg>
+          );
+        })}
+      </View>
+
+      {/* ── trigger-point dots rendered in SVG space ── */}
+      {tps.length > 0 && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {tps.map((tp) => {
+              const cx = (tp.x / 100) * SVG_W;
+              const cy = (tp.y / 100) * SVG_H;
+              return (
+                <G key={tp.id}>
+                  {/* outer pulse ring */}
+                  <Circle cx={cx} cy={cy} r={14} fill="none" stroke="#E94560" strokeWidth="1" opacity={0.3} />
+                  {/* inner dot */}
+                  <Circle cx={cx} cy={cy} r={6} fill="#E94560" stroke="#fff" strokeWidth="1.5" opacity={0.92} />
+                  {/* bright center */}
+                  <Circle cx={cx} cy={cy} r={2.5} fill="#fff" opacity={0.85} />
+                </G>
+              );
+            })}
+          </Svg>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -272,13 +294,13 @@ export function RegionList({
           <TouchableOpacity
             key={r.id}
             onPress={() => onSelect(r.id)}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             style={[
               styles.regionItem,
               isSelected && styles.regionItemSelected,
             ]}
           >
-            <View style={{ flex: 1, paddingRight: 8 }}>
+            <View style={styles.regionTextWrap}>
               <Text
                 style={[
                   styles.regionLabel,
@@ -290,7 +312,9 @@ export function RegionList({
               <Text style={styles.regionSub}>{r.tp} trigger points</Text>
             </View>
 
-            <Text style={styles.regionEmoji}>{r.emoji}</Text>
+            <View style={styles.regionEmojiWrap}>
+              <Text style={styles.regionEmoji}>{r.emoji}</Text>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -319,7 +343,7 @@ export function BodyViewTabs({
             key={tab}
             onPress={() => onChangeView(tab)}
             style={[styles.tabBtn, active && styles.tabBtnActive]}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             <Text style={[styles.tabText, active && styles.tabTextActive]}>
               {tab === "front" ? "Față" : "Spate"}
@@ -332,13 +356,51 @@ export function BodyViewTabs({
 }
 
 const styles = StyleSheet.create({
+  bodyCanvas: {
+    flex: 1,
+    position: "relative",
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#0A0E1A",
+  },
+
+  hotspot: {
+    position: "absolute",
+    borderRadius: 16,
+  },
+
+  tpDot: {
+    position: "absolute",
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: C.accent,
+    marginLeft: -6,
+    marginTop: -6,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+
+  tpRing: {
+    position: "absolute",
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    marginLeft: -12,
+    marginTop: -12,
+    borderWidth: 1.5,
+    borderColor: C.accent,
+    opacity: 0.35,
+  },
+
   regionItem: {
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -346,19 +408,30 @@ const styles = StyleSheet.create({
 
   regionItemSelected: {
     backgroundColor: C.accent + "18",
-    borderColor: C.accent + "66",
+    borderColor: C.accent + "70",
+  },
+
+  regionTextWrap: {
+    flex: 1,
+    paddingRight: 8,
   },
 
   regionLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
     color: C.text,
   },
 
   regionSub: {
     fontSize: 10,
     color: C.textMuted,
-    marginTop: 2,
+    marginTop: 3,
+  },
+
+  regionEmojiWrap: {
+    width: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   regionEmoji: {
@@ -368,7 +441,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
 
   tabBtn: {
@@ -376,8 +449,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 11,
     alignItems: "center",
   },
 
@@ -389,7 +462,7 @@ const styles = StyleSheet.create({
   tabText: {
     color: C.textMuted,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 
   tabTextActive: {

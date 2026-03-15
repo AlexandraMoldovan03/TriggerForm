@@ -26,18 +26,24 @@ export default function HomeScreen() {
 
   const {
     selectedRegion,
+    selectedSubRegion,
     painLevel,
     selectedTP,
     setSelectedRegion,
+    setSelectedSubRegion,
     setPainLevel,
     setSelectedTP,
   } = useAppStore();
 
   const regionData = REGIONS.find((r) => r.id === selectedRegion);
 
+  // Filter TPs: by region + view, then optionally by sub-region
   const tps = selectedRegion
     ? TRIGGER_POINTS.filter(
-        (tp) => tp.regionId === selectedRegion && tp.view === selectedView
+        (tp) =>
+          tp.regionId === selectedRegion &&
+          tp.view === selectedView &&
+          (selectedSubRegion === null || tp.subRegionId === selectedSubRegion)
       )
     : [];
 
@@ -49,6 +55,8 @@ export default function HomeScreen() {
     setSelectedTP(null);
   };
 
+  const subRegions = regionData?.subRegions ?? [];
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -59,10 +67,12 @@ export default function HomeScreen() {
           <Text style={styles.headerSub}>Bun venit înapoi</Text>
           <Text style={styles.headerTitle}>Unde simți durere?</Text>
           <Text style={styles.headerHint}>
-            Selectează zona corpului și vezi trigger points-urile probabile
+            Selectează zona corpului, precizează locația exactă și vezi trigger
+            points-urile probabile
           </Text>
         </Card>
 
+        {/* ── BODY MAP ─────────────────────────────────────────────────────── */}
         <Card>
           <BodyViewTabs
             selectedView={selectedView}
@@ -80,6 +90,7 @@ export default function HomeScreen() {
                 selectedRegion={selectedRegion}
                 onSelectRegion={handleRegionSelect}
                 selectedView={selectedView}
+                selectedSubRegion={selectedSubRegion}
               />
             </View>
 
@@ -93,6 +104,78 @@ export default function HomeScreen() {
           </View>
         </Card>
 
+        {/* ── STEP 2 — WHERE EXACTLY IS THE PAIN? ─────────────────────────── */}
+        {selectedRegion && subRegions.length > 0 && (
+          <Card>
+            <Text style={styles.cardTitle}>
+              📍 Unde exact în{" "}
+              <Text style={{ color: C.accentSoft }}>{regionData?.label}</Text>?
+            </Text>
+            <Text style={styles.subRegionHint}>
+              Selectează zona specifică pentru trigger points mai precise
+            </Text>
+
+            <View style={styles.subRegionRow}>
+              {/* "All" chip */}
+              <TouchableOpacity
+                onPress={() => setSelectedSubRegion(null)}
+                style={[
+                  styles.subRegionChip,
+                  selectedSubRegion === null && styles.subRegionChipActive,
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.subRegionChipText,
+                    selectedSubRegion === null &&
+                      styles.subRegionChipTextActive,
+                  ]}
+                >
+                  Toate
+                </Text>
+              </TouchableOpacity>
+
+              {subRegions.map((sr) => (
+                <TouchableOpacity
+                  key={sr.id}
+                  onPress={() =>
+                    setSelectedSubRegion(
+                      selectedSubRegion === sr.id ? null : sr.id
+                    )
+                  }
+                  style={[
+                    styles.subRegionChip,
+                    selectedSubRegion === sr.id && styles.subRegionChipActive,
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.subRegionChipText,
+                      selectedSubRegion === sr.id &&
+                        styles.subRegionChipTextActive,
+                    ]}
+                  >
+                    {sr.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Description of selected sub-region */}
+            {selectedSubRegion && (
+              <View style={styles.subRegionDesc}>
+                <Text style={styles.subRegionDescText}>
+                  {subRegions.find((sr) => sr.id === selectedSubRegion)
+                    ?.description ?? ""}
+                </Text>
+              </View>
+            )}
+          </Card>
+        )}
+
+        {/* ── STEP 3 — PAIN INTENSITY ──────────────────────────────────────── */}
         {selectedRegion && (
           <Card>
             <View style={styles.painRow}>
@@ -129,10 +212,18 @@ export default function HomeScreen() {
           </Card>
         )}
 
+        {/* ── STEP 4 — TRIGGER POINTS ──────────────────────────────────────── */}
         {tps.length > 0 && (
           <Card>
             <Text style={styles.cardTitle}>
-              Trigger points — {regionData?.label}
+              Trigger points —{" "}
+              {selectedSubRegion
+                ? subRegions.find((sr) => sr.id === selectedSubRegion)?.label
+                : regionData?.label}
+            </Text>
+            <Text style={styles.tpCountHint}>
+              {tps.length} trigger point{tps.length !== 1 ? "s" : ""}{" "}
+              {selectedSubRegion ? "pentru zona selectată" : "în această regiune"}
             </Text>
 
             {tps.map((tp) => {
@@ -149,6 +240,11 @@ export default function HomeScreen() {
                     <View style={styles.tpTextBlock}>
                       <Text style={styles.tpName}>{tp.label}</Text>
                       <Text style={styles.tpMuscle}>{tp.muscle}</Text>
+                      {tp.locationDescription && (
+                        <Text style={styles.tpLocation}>
+                          📌 {tp.locationDescription}
+                        </Text>
+                      )}
                     </View>
 
                     <SeverityDots severity={tp.severity} />
@@ -161,7 +257,9 @@ export default function HomeScreen() {
                         {tp.painReferral.join(", ")}
                       </Text>
 
-                      <Text style={[styles.tpSectionLabel, { marginTop: 8 }]}>
+                      <Text
+                        style={[styles.tpSectionLabel, { marginTop: 8 }]}
+                      >
                         Simptome frecvente
                       </Text>
                       <Text style={styles.tpReferred}>
@@ -184,6 +282,7 @@ export default function HomeScreen() {
           </Card>
         )}
 
+        {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
         <View style={styles.quickRow}>
           <TouchableOpacity
             onPress={() => router.push("/scan")}
@@ -270,9 +369,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: C.text,
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
+  // ── Sub-region selection ─────────────────────────────────────────────────
+  subRegionHint: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+
+  subRegionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  subRegionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: C.surface,
+    borderWidth: 1.2,
+    borderColor: C.border,
+  },
+
+  subRegionChipActive: {
+    backgroundColor: C.accent + "22",
+    borderColor: C.accent,
+  },
+
+  subRegionChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: C.textMuted,
+  },
+
+  subRegionChipTextActive: {
+    color: C.accent,
+  },
+
+  subRegionDesc: {
+    marginTop: 10,
+    backgroundColor: C.accent + "10",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: C.accent + "80",
+  },
+
+  subRegionDescText: {
+    fontSize: 11,
+    color: C.textMuted,
+    lineHeight: 17,
+    fontStyle: "italic",
+  },
+
+  // ── Pain slider ──────────────────────────────────────────────────────────
   painRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -300,6 +455,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
+  // ── Trigger points ───────────────────────────────────────────────────────
+  tpCountHint: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginBottom: 10,
+  },
+
   tpItem: {
     backgroundColor: C.surface,
     borderWidth: 1,
@@ -317,7 +479,7 @@ const styles = StyleSheet.create({
   tpHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
 
   tpTextBlock: {
@@ -335,6 +497,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: C.textMuted,
     marginTop: 2,
+  },
+
+  tpLocation: {
+    fontSize: 10,
+    color: C.accentSoft,
+    marginTop: 4,
+    lineHeight: 15,
   },
 
   tpDetails: {
@@ -372,6 +541,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  // ── Quick actions ────────────────────────────────────────────────────────
   quickRow: {
     flexDirection: "row",
     gap: 10,

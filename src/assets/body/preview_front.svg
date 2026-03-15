@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="600" viewBox="0 0 320 600">
+  <rect width="320" height="600" fill="#0A0E1A"/>
+  <ellipse cx="160" cy="34" rx="27" ry="33" fill="#162035" stroke="#4A6FA5" stroke-width="1.5"/>
+  <ellipse cx="133" cy="36" rx="5" ry="8" fill="#162035" stroke="#4A6FA5" stroke-width="1.2"/>
+  <ellipse cx="187" cy="36" rx="5" ry="8" fill="#162035" stroke="#4A6FA5" stroke-width="1.2"/>
+  <path d="M148,66 L147,90 Q160,94 173,90 L172,66 Q160,70 148,66Z" fill="#162035" stroke="#4A6FA5" stroke-width="1.2"/>
+  <path d="M148,66 Q128,68 112,78 Q96,88 90,100 Q78,112 74,130 Q70,148 72,168 Q74,188 78,210 Q82,228 86,244 Q88,258 87,266 Q84,272 80,274 Q76,270 74,264 Q72,254 70,238 Q66,214 64,190 Q60,166 62,144 Q64,124 70,108 Q80,92 90,100 Q96,104 98,120 Q100,138 100,158 Q100,176 100,192 Q100,206 102,216 Q104,228 106,242 Q108,258 108,272 Q108,292 108,312 Q108,334 109,354 Q110,376 110,394 Q110,412 109,428 Q108,444 108,462 Q108,480 108,498 Q108,510 107,520 Q106,530 106,540 Q106,550 110,556 Q116,562 124,560 Q132,558 134,548 Q136,538 134,526 Q132,514 132,502 Q132,488 132,472 Q132,454 131,436 Q130,418 130,400 Q130,382 130,364 Q130,346 130,328 Q130,310 131,294 Q132,278 133,268 Q134,256 136,248 Q140,238 148,234 Q156,230 160,230 Q164,230 172,234 Q180,238 184,248 Q186,256 187,268 Q188,278 189,294 Q190,310 190,328 Q190,346 190,364 Q190,382 190,400 Q189,418 188,436 Q187,454 188,472 Q188,488 188,502 Q186,514 184,526 Q182,538 184,548 Q186,558 194,560 Q202,562 208,556 Q212,550 212,540 Q212,530 211,520 Q210,510 212,498 Q212,480 212,462 Q211,444 210,428 Q209,412 210,394 Q210,376 211,354 Q212,334 212,312 Q212,292 212,272 Q212,258 214,242 Q216,228 218,216 Q220,206 220,192 Q220,176 220,158 Q220,138 222,120 Q224,104 230,100 Q240,92 250,108 Q256,124 258,144 Q260,166 256,190 Q254,214 250,238 Q248,254 246,264 Q242,270 238,274 Q234,272 231,266 Q230,258 232,244 Q236,228 240,210 Q244,188 246,168 Q248,148 244,130 Q240,112 228,100 Q222,92 208,80 Q192,68 172,66Z" fill="#162035" stroke="#4A6FA5" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M128,108 Q118,116 116,130 Q114,146 118,158 Q124,168 132,170 Q140,168 146,160 Q150,150 148,136 Q144,120 136,112 Q132,108 128,108Z" fill="none" stroke="#3A5A8A" stroke-width="1.3" opacity="0.55"/>
+  <path d="M192,108 Q202,116 204,130 Q206,146 202,158 Q196,168 188,170 Q180,168 174,160 Q170,150 172,136 Q176,120 184,112 Q188,108 192,108Z" fill="none" stroke="#3A5A8A" stroke-width="1.3" opacity="0.55"/>
+  <line x1="160" y1="100" x2="160" y2="218" stroke="#3A5A8A" stroke-width="0.8" opacity="0.3"/>
+  <path d="M148,132 Q154,138 160,140 Q166,138 172,132" fill="none" stroke="#3A5A8A" stroke-width="0.8" opacity="0.3"/>
+  <path d="M160,100 Q148,96 130,98 Q114,102 108,108" fill="none" stroke="#3A5A8A" stroke-width="1.2" opacity="0.5"/>
+  <path d="M160,100 Q172,96 190,98 Q206,102 212,108" fill="none" stroke="#3A5A8A" stroke-width="1.2" opacity="0.5"/>
+  <line x1="160" y1="170" x2="160" y2="225" stroke="#3A5A8A" stroke-width="0.8" opacity="0.3"/>
+  <path d="M148,178 Q154,181 160,182 Q166,181 172,178" fill="none" stroke="#3A5A8A" stroke-width="0.7" opacity="0.25"/>
+  <path d="M148,192 Q154,195 160,196 Q166,195 172,192" fill="none" stroke="#3A5A8A" stroke-width="0.7" opacity="0.25"/>
+  <path d="M148,206 Q154,209 160,210 Q166,209 172,206" fill="none" stroke="#3A5A8A" stroke-width="0.7" opacity="0.25"/>
+  <path d="M118,170 Q140,188 160,192 Q180,188 202,170" fill="none" stroke="#3A5A8A" stroke-width="1" opacity="0.35"/>
+  <path d="M136,226 Q148,220 160,218 Q172,220 184,226" fill="none" stroke="#3A5A8A" stroke-width="1" opacity="0.35"/>
+  <line x1="130" y1="240" x2="130" y2="390" stroke="#3A5A8A" stroke-width="0.8" opacity="0.3"/>
+  <line x1="190" y1="240" x2="190" y2="390" stroke="#3A5A8A" stroke-width="0.8" opacity="0.3"/>
+  <circle cx="92" cy="102" r="5" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.7"/>
+  <circle cx="228" cy="102" r="5" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.7"/>
+  <circle cx="68" cy="200" r="5" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.6"/>
+  <circle cx="252" cy="200" r="5" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.6"/>
+  <circle cx="134" cy="418" r="8" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.6"/>
+  <circle cx="186" cy="418" r="8" fill="#0D1928" stroke="#5A7FC0" stroke-width="1.2" opacity="0.6"/>
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+</svg>

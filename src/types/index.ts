@@ -23,12 +23,19 @@ export type BodyRegionId =
 export type SeverityEmoji = "🔴" | "🟠" | "🟡" | "🟢";
 export type ExerciseType = "massage" | "stretch" | "mobility";
 
+export interface SubRegion {
+  id: string;
+  label: string;
+  description?: string;
+}
+
 export interface RegionDef {
   id: BodyRegionId;
   label: string;
   emoji: SeverityEmoji;
   tp: number;
   view: BodyView;
+  subRegions?: SubRegion[];
 }
 
 export interface TriggerPoint3D {
@@ -46,6 +53,8 @@ export interface TriggerPoint3D {
   symptoms: string[];
   tags: string[];
   relatedExercises: string[];
+  subRegionId?: string;
+  locationDescription?: string;
 }
 
 export interface Exercise {
