@@ -527,12 +527,10 @@ const st = StyleSheet.create({
     height: 30,
     resizeMode: "contain",
     marginBottom: 7,
-    opacity: 0.55,
-    tintColor: "#9ca3af",
+    opacity: 0.6,
   },
   sportIconSel: {
     opacity: 1,
-    tintColor: "#1fd67a",
   },
   sportName: {
     fontSize: 12,
