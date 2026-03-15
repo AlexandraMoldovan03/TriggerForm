@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -165,6 +166,11 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Card style={styles.headerCard}>
+          <Image
+            source={require("../../src/assets/body/Logo2.jpg")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.headerSub}>Welcome back</Text>
           <Text style={styles.headerTitle}>Where do you feel pain?</Text>
           <Text style={styles.headerHint}>
@@ -607,6 +613,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     position: "relative",
     overflow: "hidden",
+  },
+
+  headerLogo: {
+    width: 140,
+    height: 52,
+    marginBottom: 10,
   },
 
   headerSub: {

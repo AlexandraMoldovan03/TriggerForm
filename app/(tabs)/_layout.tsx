@@ -1,5 +1,14 @@
 import { Tabs } from "expo-router";
 import { C } from "../../src/utils/colors";
+import { Image, View } from "react-native";
+
+const ICONS = {
+  home:      require("../../src/assets/body/home_icon.png"),
+  scan:      require("../../src/assets/body/scan_icon.png"),
+  exercises: require("../../src/assets/body/excercise.png"),
+  nutrition: require("../../src/assets/body/nutrition_icon.png"),
+  profile:   require("../../src/assets/body/profile_icon.png"),
+};
 
 export default function TabLayout() {
   return (
@@ -25,7 +34,9 @@ export default function TabLayout() {
         name="index"
         options={{
           title:      "Home",
-          tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={ICONS.home} focused={focused} />
+          ),
           headerTitle: "TriggerForm",
           headerLeft: () => <HeaderLogo />,
         }}
@@ -34,7 +45,9 @@ export default function TabLayout() {
         name="scan"
         options={{
           title:      "Scan",
-          tabBarIcon: ({ color }) => <TabIcon emoji="📷" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={ICONS.scan} focused={focused} />
+          ),
           headerTitle: "Body Scanner",
         }}
       />
@@ -42,7 +55,9 @@ export default function TabLayout() {
         name="exercises"
         options={{
           title:      "Exercises",
-          tabBarIcon: ({ color }) => <TabIcon emoji="🧘" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={ICONS.exercises} focused={focused} />
+          ),
           headerTitle: "Exercises & Recovery",
         }}
       />
@@ -50,7 +65,9 @@ export default function TabLayout() {
         name="nutrition"
         options={{
           title:      "Nutrition",
-          tabBarIcon: ({ color }) => <TabIcon emoji="🥗" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={ICONS.nutrition} focused={focused} />
+          ),
           headerTitle: "Nutrition",
         }}
       />
@@ -58,7 +75,9 @@ export default function TabLayout() {
         name="profile"
         options={{
           title:      "Profile",
-          tabBarIcon: ({ color }) => <TabIcon emoji="👤" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={ICONS.profile} focused={focused} />
+          ),
           headerTitle: "My Profile",
         }}
       />
@@ -66,22 +85,39 @@ export default function TabLayout() {
   );
 }
 
-import { Text, View } from "react-native";
-
-function TabIcon({ emoji, color }: { emoji: string; color: string }) {
-  return <Text style={{ fontSize: 20, opacity: color === C.accent ? 1 : 0.5 }}>{emoji}</Text>;
+function TabIcon({
+  source,
+  focused,
+}: {
+  source: ReturnType<typeof require>;
+  focused: boolean;
+}) {
+  return (
+    <Image
+      source={source}
+      style={{
+        width:  24,
+        height: 24,
+        resizeMode: "contain",
+        opacity: focused ? 1 : 0.45,
+        tintColor: focused ? C.accent : undefined,
+      }}
+    />
+  );
 }
 
 function HeaderLogo() {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 16 }}>
-      <View style={{
-        width: 28, height: 28, borderRadius: 8,
-        backgroundColor: C.accent,
-        justifyContent: "center", alignItems: "center",
-      }}>
-        <Text style={{ fontSize: 14 }}>⚡</Text>
-      </View>
+    <View style={{ paddingLeft: 16 }}>
+      <Image
+        source={ICONS.scan}
+        style={{
+          width: 26,
+          height: 26,
+          resizeMode: "contain",
+          tintColor: C.accent,
+        }}
+      />
     </View>
   );
 }

@@ -15,14 +15,14 @@ import * as ImagePicker from "expo-image-picker";
 const GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 const SPORTS = [
-  { label: "Running", emoji: "🏃" },
-  { label: "Cycling", emoji: "🚴" },
-  { label: "Swimming", emoji: "🏊" },
-  { label: "Football", emoji: "⚽" },
-  { label: "Gym", emoji: "🏋️" },
-  { label: "Basketball", emoji: "🏀" },
-  { label: "Tennis", emoji: "🎾" },
-  { label: "Rest / Yoga", emoji: "🧘" },
+  { label: "Running",    icon: require("../../src/assets/body/running_icon.png") },
+  { label: "Cycling",    icon: require("../../src/assets/body/cycling_icon.png") },
+  { label: "Swimming",   icon: require("../../src/assets/body/swimming_icon.png") },
+  { label: "Football",   icon: require("../../src/assets/body/football_icon.png") },
+  { label: "Gym",        icon: require("../../src/assets/body/gym_icon.png") },
+  { label: "Basketball", icon: require("../../src/assets/body/basketball_icon.png") },
+  { label: "Tennis",     icon: require("../../src/assets/body/tennis_icon.png") },
+  { label: "Rest / Yoga",icon: require("../../src/assets/body/yoga_icon4.png") },
 ];
 
 type AIResult = {
@@ -260,7 +260,13 @@ Allowed status values:
                 style={[st.sportChip, sport === sp.label && st.chipSel]}
                 onPress={() => setSport(sp.label)}
               >
-                <Text style={st.sportEmoji}>{sp.emoji}</Text>
+                <Image
+                  source={sp.icon}
+                  style={[
+                    st.sportIcon,
+                    sport === sp.label && st.sportIconSel,
+                  ]}
+                />
                 <Text style={[st.sportName, sport === sp.label && st.nameSel]}>
                   {sp.label}
                 </Text>
@@ -313,9 +319,15 @@ Allowed status values:
           <Text style={st.stepSub}>Add every meal and snack today.</Text>
 
           <TouchableOpacity style={st.photoBtn} onPress={pickMealImage}>
-            <Text style={st.photoBtnText}>
-              {mealImage ? "📷 Change meal photo" : "📷 Add meal photo"}
-            </Text>
+            <View style={st.photoBtnInner}>
+              <Image
+                source={require("../../src/assets/body/scan_icon.png")}
+                style={st.photoBtnIcon}
+              />
+              <Text style={st.photoBtnText}>
+                {mealImage ? "Change meal photo" : "Add meal photo"}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {mealImage && (
@@ -510,9 +522,17 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(31,214,122,0.1)",
     borderColor: "#1fd67a",
   },
-  sportEmoji: {
-    fontSize: 22,
-    marginBottom: 5,
+  sportIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+    marginBottom: 7,
+    opacity: 0.55,
+    tintColor: "#9ca3af",
+  },
+  sportIconSel: {
+    opacity: 1,
+    tintColor: "#1fd67a",
   },
   sportName: {
     fontSize: 12,
@@ -609,6 +629,18 @@ const st = StyleSheet.create({
     padding: 14,
     alignItems: "center",
     marginBottom: 14,
+  },
+  photoBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  photoBtnIcon: {
+    width: 18,
+    height: 18,
+    resizeMode: "contain",
+    tintColor: "#e5e7eb",
+    opacity: 0.8,
   },
   photoBtnText: {
     color: "#e5e7eb",

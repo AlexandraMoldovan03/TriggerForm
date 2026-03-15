@@ -161,7 +161,7 @@ export default function SpecialistsScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Header ─────────────────────────────────────────────────── */}
+      {/* ── Header ───────────────────────────────────────────────────
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backIcon}>←</Text>
@@ -170,7 +170,7 @@ export default function SpecialistsScreen() {
           <Text style={styles.headerTitle}>Recommended Specialists</Text>
           <Text style={styles.headerSub}>Based on your scan results</Text>
         </View>
-      </View>
+      </View> */}
 
       <ScrollView
         contentContainerStyle={styles.scroll}

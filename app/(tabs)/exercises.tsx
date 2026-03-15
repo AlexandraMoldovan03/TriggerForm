@@ -163,7 +163,7 @@ export default function ExercisesScreen() {
                     <Text style={styles.tutorialTagText}>{t.tag}</Text>
                   </View>
                   <View style={styles.muteTag}>
-                    <Text style={styles.muteTagText}>🔇 Silent</Text>
+                    <Text style={styles.muteTagText}></Text>
                   </View>
                 </View>
 
