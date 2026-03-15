@@ -1,26 +1,51 @@
+export type BodyView = "front" | "back" | "left" | "right";
+
 export type BodyRegionId =
-  | "neck" | "shoulder" | "upper_back" | "lower_back"
-  | "chest" | "arm" | "hip" | "thigh" | "calf";
+  | "upper_trap_left"
+  | "upper_trap_right"
+  | "levator_left"
+  | "levator_right"
+  | "rhomboid_left"
+  | "rhomboid_right"
+  | "pec_left"
+  | "pec_right"
+  | "lumbar_left"
+  | "lumbar_right"
+  | "glute_med_left"
+  | "glute_med_right"
+  | "piriformis_left"
+  | "piriformis_right"
+  | "hamstring_left"
+  | "hamstring_right"
+  | "calf_left"
+  | "calf_right";
 
 export type SeverityEmoji = "🔴" | "🟠" | "🟡" | "🟢";
 export type ExerciseType = "massage" | "stretch" | "mobility";
 
-export interface BodyRegion {
+export interface RegionDef {
   id: BodyRegionId;
   label: string;
   emoji: SeverityEmoji;
   tp: number;
-  exercises: number;
+  view: BodyView;
 }
 
-export interface TriggerPoint {
+export interface TriggerPoint3D {
   id: string;
+  regionId: BodyRegionId;
   name: string;
   muscle: string;
+  label: string;
+  bodySide: "left" | "right" | "midline";
+  view: BodyView;
   x: number;
   y: number;
   severity: 1 | 2 | 3;
-  referred: string;
+  painReferral: string[];
+  symptoms: string[];
+  tags: string[];
+  relatedExercises: string[];
 }
 
 export interface Exercise {

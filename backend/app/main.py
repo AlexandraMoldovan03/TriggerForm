@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Dict, Literal, List
+from typing import Literal
 
-import mediapipe as mp
-import numpy as np
-from PIL import Image
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from google import genai
+from google.genai import types
+from PIL import Image
+from pydantic import BaseModel
 
-from posture import Landmark2D, analyze_front, analyze_side
 
 app = FastAPI(title="TriggerForm Posture API")
 
@@ -21,144 +21,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-POSE = mp.solutions.pose
-
-LANDMARK_NAMES = {
-    "nose": 0,
-    "left_ear": 7,
-    "right_ear": 8,
-    "left_shoulder": 11,
-    "right_shoulder": 12,
-    "left_hip": 23,
-    "right_hip": 24,
-    "left_knee": 25,
-    "right_knee": 26,
-    "left_ankle": 27,
-    "right_ankle": 28,
-}
-
-FRONT_REQUIRED = [
-    "left_shoulder", "right_shoulder",
-    "left_hip", "right_hip",
-]
-
-SIDE_REQUIRED_LEFT = [
-    "left_ear", "left_shoulder", "left_hip", "left_knee", "left_ankle"
-]
-
-SIDE_REQUIRED_RIGHT = [
-    "right_ear", "right_shoulder", "right_hip", "right_knee", "right_ankle"
-]
+client = genai.Client()
 
 
-def load_image_as_rgb_numpy(image_bytes: bytes) -> np.ndarray:
-    pil_image = Image.open(BytesIO(image_bytes)).convert("RGB")
-    return np.array(pil_image, dtype=np.uint8)
+class ExerciseItem(BaseModel):
+    title: str
+    reason: str
 
 
-def extract_landmarks(image_rgb: np.ndarray) -> Dict[str, Landmark2D]:
-    with POSE.Pose(
-        static_image_mode=True,
-        model_complexity=1,
-        enable_segmentation=False,
-        min_detection_confidence=0.5,
-    ) as pose:
-        results = pose.process(image_rgb)
-
-    if not results.pose_landmarks:
-        raise HTTPException(status_code=422, detail="Nu am putut detecta corpul în imagine.")
-
-    lm = results.pose_landmarks.landmark
-    out: Dict[str, Landmark2D] = {}
-
-    for name, idx in LANDMARK_NAMES.items():
-        point = lm[idx]
-        out[name] = Landmark2D(
-            x=float(point.x),
-            y=float(point.y),
-            z=float(point.z),
-            visibility=float(point.visibility),
-        )
-
-    return out
-
-
-def validate_front_pose(landmarks: Dict[str, Landmark2D]) -> None:
-    missing: List[str] = []
-    for key in FRONT_REQUIRED:
-        if landmarks[key].visibility < 0.55:
-            missing.append(key)
-
-    if missing:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Pentru analiza frontală trebuie să se vadă umerii și șoldurile. "
-                "Pune telefonul mai departe și încadrează mai mult din corp."
-            ),
-        )
-
-    shoulder_y = (landmarks["left_shoulder"].y + landmarks["right_shoulder"].y) / 2
-    hip_y = (landmarks["left_hip"].y + landmarks["right_hip"].y) / 2
-
-    if abs(hip_y - shoulder_y) < 0.08:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Se vede prea puțin din corp pentru analiza frontală. "
-                "Fă un cadru în care se văd clar trunchiul și bazinul."
-            ),
-        )
+class PostureResult(BaseModel):
+    view_detected: Literal["front", "side", "unclear"]
+    body_visible_enough: bool
+    shoulder_alignment: Literal[
+        "good", "mild_asymmetry", "moderate_asymmetry", "severe_asymmetry", "unclear"
+    ]
+    hip_alignment: Literal[
+        "good", "mild_asymmetry", "moderate_asymmetry", "severe_asymmetry", "unclear"
+    ]
+    forward_head: Literal["none", "mild", "moderate", "severe", "unclear"]
+    thoracic_rounding: Literal["none", "mild", "moderate", "severe", "unclear"]
+    pelvic_tilt: Literal[
+        "neutral",
+        "mild_anterior",
+        "moderate_anterior",
+        "severe_anterior",
+        "mild_posterior",
+        "unclear",
+    ]
+    swayback_pattern: Literal["none", "mild", "moderate", "severe", "unclear"]
+    confidence: float
+    summary: str
+    recommended_region: Literal["shoulder", "upper_back", "lower_back", "hip", "none"]
+    user_guidance: str
+    posture_tips: list[str]
+    recommended_exercises: list[ExerciseItem]
+    medical_disclaimer: str
 
 
-def validate_side_pose(
-    landmarks: Dict[str, Landmark2D],
-    side_hint: Literal["left", "right"],
-) -> None:
-    required = SIDE_REQUIRED_LEFT if side_hint == "left" else SIDE_REQUIRED_RIGHT
-
-    missing: List[str] = []
-    for key in required:
-        if landmarks[key].visibility < 0.55:
-            missing.append(key)
-
-    if missing:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Pentru analiza laterală trebuie să se vadă urechea, umărul, șoldul, "
-                "genunchiul și glezna de pe aceeași parte. Depărtează telefonul și "
-                "arată tot profilul."
-            ),
-        )
-
-    prefix = "left" if side_hint == "left" else "right"
-    shoulder = landmarks[f"{prefix}_shoulder"]
-    hip = landmarks[f"{prefix}_hip"]
-    ankle = landmarks[f"{prefix}_ankle"]
-
-    body_height = abs(ankle.y - shoulder.y)
-    if body_height < 0.18:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Se vede prea puțin din corp pentru analiza laterală. "
-                "Încadrează corpul mai complet, ideal de la cap până sub genunchi."
-            ),
-        )
-
-    if abs(shoulder.x - hip.x) < 0.01:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Poziția nu pare suficient de laterală. Întoarce corpul mai clar în profil."
-            ),
-        )
+def normalize_to_jpeg(image_bytes: bytes) -> bytes:
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    out = BytesIO()
+    image.save(out, format="JPEG", quality=90)
+    return out.getvalue()
 
 
 @app.get("/")
 def health():
-    return {"status": "ok", "message": "TriggerForm Posture API is running"}
+    return {"status": "ok", "message": "TriggerForm Gemini Posture API is running"}
 
 
 @app.post("/analyze-posture")
@@ -172,22 +81,82 @@ async def analyze_posture(
         raise HTTPException(status_code=400, detail="Imagine lipsă sau goală.")
 
     try:
-        image_rgb = load_image_as_rgb_numpy(content)
-        landmarks = extract_landmarks(image_rgb)
+        jpeg_bytes = normalize_to_jpeg(content)
 
-        if view == "front":
-            validate_front_pose(landmarks)
-            result = analyze_front(landmarks)
-        else:
-            validate_side_pose(landmarks, side_hint)
-            result = analyze_side(landmarks, side_hint=side_hint)
+        prompt = f"""
+Analyze this posture screening photo for a mobile recovery/fitness app.
+
+User selected intended view: {view}
+If side view, intended visible side: {side_hint}
+
+Important rules:
+- This is NOT a medical diagnosis.
+- Only do posture screening / visual estimation.
+- If the person is too close, too far, partly cut off, blurry, or the body is not visible enough,
+  set body_visible_enough=false and explain how to retake the photo.
+- For front view, focus mostly on shoulder and hip symmetry.
+- For side view, focus mostly on forward head, thoracic rounding, pelvic tilt, and swayback pattern.
+- Keep the summary concise and practical.
+- Keep user_guidance short and actionable.
+- confidence must be a number between 0 and 1.
+- medical_disclaimer must clearly say it is not a diagnosis.
+- recommended_region must be one of: shoulder, upper_back, lower_back, hip, none.
+- posture_tips must contain 3 short practical tips.
+- recommended_exercises must contain 3 to 5 simple corrective exercises.
+
+Exercise examples allowed:
+- Chin tucks
+- Wall angels
+- Thoracic extension on wall
+- Doorway chest stretch
+- Hip flexor stretch
+- Glute bridge
+- Dead bug
+- Cat-cow
+- Child's pose
+- Hamstring stretch
+- Scapular retractions
+
+For each exercise:
+- title = short name
+- reason = one short sentence for why it helps
+
+Avoid medical claims and avoid diagnosing scoliosis or structural pathology from one photo.
+"""
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                prompt,
+                types.Part.from_bytes(
+                    data=jpeg_bytes,
+                    mime_type="image/jpeg",
+                ),
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+                response_schema=PostureResult,
+            ),
+        )
+
+        if not response.parsed:
+            raise HTTPException(
+                status_code=502,
+                detail="Gemini nu a returnat un răspuns valid."
+            )
+
+        result: PostureResult = response.parsed
+
+        return {
+            "ok": True,
+            "result": result.model_dump(),
+        }
 
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Eroare la procesarea imaginii: {exc}")
-
-    return {
-        "ok": True,
-        "result": result,
-    }
+        raise HTTPException(
+            status_code=500,
+            detail=f"Eroare la procesarea imaginii: {exc}",
+        )

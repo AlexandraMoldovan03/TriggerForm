@@ -1,13 +1,13 @@
 import { create } from "zustand";
-import type { BodyRegionId, TriggerPoint } from "../types";
+import type { BodyRegionId, TriggerPoint3D } from "../types";
 
 interface AppState {
   selectedRegion: BodyRegionId | null;
   painLevel: number;
-  selectedTP: TriggerPoint | null;
+  selectedTP: TriggerPoint3D | null;
   setSelectedRegion: (r: BodyRegionId | null) => void;
   setPainLevel: (v: number) => void;
-  setSelectedTP: (tp: TriggerPoint | null) => void;
+  setSelectedTP: (tp: TriggerPoint3D | null) => void;
   clearSelection: () => void;
 }
 
