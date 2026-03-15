@@ -175,11 +175,55 @@ export default function ScanScreen() {
     router.push("/");
   };
 
+
+
   const instructions =
     viewMode === "front"
       ? "Pune telefonul pe un suport. Stai drept la 2–3m. Trebuie să se vadă capul, trunchiul și bazinul."
       : "Pune telefonul pe un suport. Stai complet din profil la 2–3m. Trebuie să se vadă urechea, umărul, șoldul, genunchiul și glezna.";
 
+
+
+  // Maps AI-returned exercise titles → local exercise IDs for deep linking
+  const findExerciseId = (title: string): string | null => {
+    const t = title.toLowerCase();
+    if (t.includes("chin") || t.includes("tuck"))           return "ex_chin_tucks";
+    if (t.includes("wall angel"))                           return "ex_wall_angels";
+    if (t.includes("cat") && t.includes("cow"))             return "ex_cat_cow";
+    if (t.includes("child"))                                return "ex_child_pose";
+    if (t.includes("dead bug"))                             return "ex_dead_bug";
+    if (t.includes("glute bridge") || t.includes("bridge")) return "ex_glute_bridge";
+    if (t.includes("clamshell"))                            return "ex_clamshell";
+    if (t.includes("piriformis"))                           return "ex_piriformis_stretch";
+    if (t.includes("figure"))                               return "ex_figure4";
+    if (t.includes("hamstring"))                            return "ex_hamstring_stretch";
+    if (t.includes("calf"))                                 return "ex_calf_stretch";
+    if (t.includes("doorway") || (t.includes("chest") && t.includes("stretch")))
+                                                            return "ex_doorway_chest";
+    if (t.includes("trap") || t.includes("trapez"))         return "ex_upper_trap_stretch";
+    if (t.includes("levator"))                              return "ex_levator_stretch";
+    return null;
+  };
+
+  const openSpecialistSearch = () => {
+    const query =
+      result?.recommended_region === "lower_back"
+        ? "physiotherapist posture lower back pain"
+        : result?.recommended_region === "upper_back"
+        ? "physiotherapist posture upper back pain"
+        : result?.recommended_region === "shoulder"
+        ? "physiotherapist shoulder posture pain"
+        : result?.recommended_region === "hip"
+        ? "physiotherapist hip posture pain"
+        : "physiotherapist posture assessment";
+
+    router.push({
+      pathname: "/specialists",
+      params: { specialistQuery: query },
+    });
+  };    
+
+      
   return (
     <View style={styles.root}>
       <ScrollView
@@ -363,12 +407,80 @@ export default function ScanScreen() {
             <Text style={[styles.title, { marginTop: 12 }]}>
               Exerciții recomandate
             </Text>
-            {result.recommended_exercises?.map((exercise, index) => (
-              <View key={index} style={styles.exerciseItem}>
-                <Text style={styles.exerciseTitle}>{exercise.title}</Text>
-                <Text style={styles.exerciseReason}>{exercise.reason}</Text>
+            {result.recommended_exercises?.map((exercise, index) => {
+              const exId = findExerciseId(exercise.title);
+              return (
+                <View key={index} style={styles.exerciseItem}>
+                  <View style={styles.exerciseHeader}>
+                    <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                    {exId && (
+                      <TouchableOpacity
+                        onPress={() => router.push(`/exercise/${exId}`)}
+                        style={styles.exerciseStartBtn}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.exerciseStartText}>Start ▶</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.exerciseReason}>{exercise.reason}</Text>
+                  {!exId && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/exercises")}
+                      style={[styles.exerciseStartBtn, { alignSelf: "flex-start", marginTop: 8 }]}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.exerciseStartText}>Caută în exerciții ▶</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+
+
+
+          <View style={styles.specialistCard}>
+              <View style={styles.specialistHeader}>
+                <Text style={styles.specialistBadge}>SPECIALIST SUPPORT</Text>
+                <Text style={styles.specialistTitle}>
+                  Need professional guidance?
+                </Text>
+                <Text style={styles.specialistText}>
+                  This posture screening is educational, not diagnostic. If your pain
+                  persists, gets worse, radiates, or affects movement, it is safer to
+                  consult a licensed physiotherapist or posture specialist.
+                </Text>
               </View>
-            ))}
+
+              <View style={styles.specialistWarningBox}>
+                <Text style={styles.specialistWarningTitle}>
+                  Consider seeing a specialist if you have:
+                </Text>
+                <Text style={styles.specialistBullet}>• pain lasting more than 2–6 weeks</Text>
+                <Text style={styles.specialistBullet}>• numbness, tingling, or weakness</Text>
+                <Text style={styles.specialistBullet}>• pain spreading into arm or leg</Text>
+                <Text style={styles.specialistBullet}>• strong asymmetry or worsening posture</Text>
+                <Text style={styles.specialistBullet}>• pain that limits training or daily activities</Text>
+              </View>
+
+              <View style={styles.specialistActions}>
+                <TouchableOpacity
+                  style={styles.secondaryActionBtn}
+                  activeOpacity={0.85}
+                  onPress={openSpecialistSearch}
+                >
+                  <Text style={styles.secondaryActionText}>Find a specialist</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.primaryActionBtn}
+                  activeOpacity={0.85}
+                  onPress={() => router.push("/exercises")}
+                >
+                  <Text style={styles.primaryActionText}>Continue with recovery</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <Text style={styles.disclaimer}>{result.medical_disclaimer}</Text>
 
@@ -568,11 +680,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
+  exerciseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+    gap: 8,
+  },
+
   exerciseTitle: {
+    flex: 1,
     color: C.text,
     fontSize: 13,
     fontWeight: "700",
-    marginBottom: 4,
+  },
+
+  exerciseStartBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    alignSelf: "center",
+  },
+
+  exerciseStartText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "800",
   },
 
   exerciseReason: {
@@ -580,4 +714,107 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+
+
+    specialistCard: {
+    marginTop: 16,
+    backgroundColor: "#0F172A",
+    borderWidth: 1,
+    borderColor: C.blue + "55",
+    borderRadius: 18,
+    padding: 14,
+  },
+
+  specialistHeader: {
+    marginBottom: 12,
+  },
+
+  specialistBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: C.blue + "22",
+    color: C.blue,
+    borderWidth: 1,
+    borderColor: C.blue + "55",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+
+  specialistTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+
+  specialistText: {
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 12,
+    lineHeight: 19,
+  },
+
+  specialistWarningBox: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+
+  specialistWarningTitle: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+
+  specialistBullet: {
+    color: "rgba(255,255,255,0.74)",
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+
+  specialistActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+
+  secondaryActionBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: C.blue + "66",
+  },
+
+  secondaryActionText: {
+    color: C.blue,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  primaryActionBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.blue,
+  },
+
+  primaryActionText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
 });
