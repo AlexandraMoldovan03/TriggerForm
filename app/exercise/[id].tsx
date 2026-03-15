@@ -4,153 +4,157 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { C } from "../../src/utils/colors";
+import { useAuth } from "../../src/context/AuthContext";
+import { logExercise } from "../../src/lib/db";
 import { EXERCISES } from "../../src/data";
 import { TypeBadge, Card, Button } from "../../src/components/UI";
 
 // ── Per-exercise benefit text ─────────────────────────────────────────────────
 const BENEFITS: Record<string, string> = {
   ex_chin_tucks:
-    "Repoziționează capul deasupra coloanei, reducând stresul pe vertebrele cervicale. Esențial pentru forward head posture — una dintre cele mai frecvente probleme posturale la persoanele care stau mult la birou.",
+    "Repositions the head over the spine, reducing stress on the cervical vertebrae. Essential for forward head posture — one of the most common postural issues in desk workers.",
   ex_upper_trap_stretch:
-    "Relaxează și alungește trapezul superior, mușchiul cel mai frecvent responsabil pentru tensiunea la baza gâtului și durerile de cap de tip tensional. Reduce compresia pe vertebrele C3–C5.",
+    "Relaxes and lengthens the upper trapezius, the muscle most often responsible for tension at the base of the neck and tension-type headaches. Reduces compression on C3–C5 vertebrae.",
   ex_wall_angels:
-    "Activează simultan rotatorii externi ai umărului, romboidele și stabilizatorii scapulari, contracarând efectele posturii aplecate înainte (rounded shoulders). Unul dintre cele mai complete exerciții de corectare posturală.",
+    "Simultaneously activates the shoulder external rotators, rhomboids and scapular stabilisers, counteracting the effects of rounded shoulders. One of the most complete postural correction exercises.",
   ex_levator_stretch:
-    "Elonghează levator scapulae — mușchiul responsabil cel mai des pentru rigiditatea cervicală și blocajul la rotația capului. Un stretch neglijat adesea, dar cu impact clinic semnificativ.",
+    "Lengthens the levator scapulae — the muscle most commonly responsible for cervical stiffness and restricted head rotation. Often overlooked, but clinically significant.",
   ex_doorway_chest:
-    "Deschide pectoralele scurte care trag umerii înainte, permițând scapulelor să revină la poziție neutră. Combate direct efectele posturale ale muncii pe calculator.",
+    "Opens shortened pectorals that pull the shoulders forward, allowing the scapulae to return to a neutral position. Directly counters the postural effects of computer work.",
   ex_cat_cow:
-    "Mobilizează întreaga coloană vertebrală în flexie și extensie, lubrifiind discurile intervertebrale. Îmbunătățește conștientizarea neutră a pelvisului și reduce rigiditatea lombară matinală.",
+    "Mobilises the entire spine through flexion and extension, lubricating the intervertebral discs. Improves pelvic neutral awareness and reduces morning lumbar stiffness.",
   ex_child_pose:
-    "Decomprimă coloana lombară prin tracțiune ușoară, relaxează musculatura paravertebrală și deschide articulațiile facetare. Unul dintre cele mai eficiente exerciții de recuperare activă pentru low back pain.",
+    "Decompresses the lumbar spine through gentle traction, relaxes the paraspinal muscles and opens the facet joints. One of the most effective active recovery exercises for low back pain.",
   ex_dead_bug:
-    "Antrenează stabilizarea neutrală a coloanei lombare prin activarea profundă a core-ului (transvers abdominal + multifidus), fără a comprima discurile. Superior plank-ului clasic pentru probleme lombare.",
+    "Trains neutral lumbar stabilisation through deep core activation (transverse abdominis + multifidus) without compressing the discs. Superior to the classic plank for lumbar issues.",
   ex_glute_bridge:
-    "Activează lanțul posterior (fese + ischiogambieri) și stabilizatorii pelvini, corectând dezechilibrul anteroposterior al pelvisului. Esențial în anterior pelvic tilt și dureri lombare.",
+    "Activates the posterior chain (glutes + hamstrings) and pelvic stabilisers, correcting anterior-posterior pelvic imbalance. Essential for anterior pelvic tilt and lower back pain.",
   ex_clamshell:
-    "Izolat și activează gluteul mediu — mușchiul critic pentru stabilitatea laterală a șoldului. Slăbiciunea lui este o cauză majoră a durerilor de genunchi, sold și lombalgiei funcționale.",
+    "Isolates and activates the gluteus medius — the critical muscle for lateral hip stability. Its weakness is a major cause of knee pain, hip pain and functional low back pain.",
   ex_piriformis_stretch:
-    "Eliberează piriformisul, un mușchi adânc fesier care, când este tensionat, poate comprima nervul sciatic și produce dureri de tip sciatic. Stretch-ul figura 4 este tehnica gold standard.",
+    "Releases the piriformis, a deep gluteal muscle that, when tight, can compress the sciatic nerve and produce sciatica-like pain. The figure-4 stretch is the gold-standard technique.",
   ex_figure4:
-    "Varianta funcțională a piriformis stretch — targetează musculatura rotator externă a șoldului. Mai accesibilă decât varianta pe podea și poate fi executată și pe scaun.",
+    "The functional variant of the piriformis stretch — targets the hip external rotator muscles. More accessible than the floor version and can also be performed seated.",
   ex_hamstring_stretch:
-    "Alungește ischiogambierii, al căror scurtament cronic contribuie la anterior pelvic tilt, dureri lombare și restricție de mișcare. Stretch-ul activ este superior celui pasiv forțat.",
+    "Lengthens the hamstrings, whose chronic shortening contributes to anterior pelvic tilt, low back pain and restricted movement. Active stretching is superior to forced passive stretching.",
   ex_calf_stretch:
-    "Adresează gastrocnemianul și solearul — mușchi frecvent scurtați care afectează biomecanica gleznei, a genunchiului și a posturii globale. Stretch-ul dublu (drept + îndoit) este esențial.",
+    "Addresses the gastrocnemius and soleus — frequently shortened muscles that affect ankle and knee biomechanics and global posture. The double stretch (straight + bent knee) is essential.",
 };
 
 // ── Per-exercise step-by-step instructions ────────────────────────────────────
 const STEPS: Record<string, string[]> = {
   ex_chin_tucks: [
-    "Stai drept pe un scaun sau în picioare, privind înainte. Umerii relaxați, bărbia paralelă cu podeaua.",
-    "Fără să ridici bărbia în sus, împinge ușor capul înapoi orizontal — ca și cum ai face un 'dublu bărbie'. Mentonul se retrage, nu coboară.",
-    "Simți un stretch ușor la baza craniului și în mușchii suboccipitali. Nu ar trebui să dea durere — doar elongare.",
-    "Menține poziția retrasă 3–5 secunde, respirând normal. Senzația de 'greutate' in ceafă este normală.",
-    "Revino la start fără să proiectezi capul înainte din inerție. Mișcarea trebuie să fie mică, controlată — 1–2 cm. Repetă 12–15 ori, 2–3 serii.",
+    "Sit up straight on a chair or stand tall, looking forward. Shoulders relaxed, chin parallel to the floor.",
+    "Without lifting the chin, gently push the head straight back horizontally — as if making a 'double chin'. The chin retracts, it does not drop down.",
+    "Feel a mild stretch at the base of the skull and in the suboccipital muscles. There should be no pain — only gentle elongation.",
+    "Hold the retracted position for 3–5 seconds, breathing normally. A feeling of 'heaviness' at the back of the neck is normal.",
+    "Return to start without letting the head drift forward again. The movement should be small and controlled — 1–2 cm. Repeat 12–15 times, 2–3 sets.",
   ],
   ex_upper_trap_stretch: [
-    "Stai pe un scaun ferm. Cu mâna stângă, prinde marginea scaunului sub tine — acesta este ancora care menține umărul în jos.",
-    "Înclină capul spre dreapta (urechea dreaptă spre umărul drept), fără să ridici umărul stâng. Mișcarea vine din gât, nu din trunchi.",
-    "Cu mâna dreaptă, aplică o presiune ușoară pe partea superioară a capului pentru a adânci stretch-ul. Nu forța — greutatea mâinii este suficientă.",
-    "Simți elongarea pe toată lungimea gâtului stâng, spre umăr. Respiră profund: la expirație te lași ușor mai adânc.",
-    "Menține 30–40 secunde, fără să miști umărul ancorat. Repetă de cealaltă parte. 2–3 ori per parte.",
+    "Sit on a firm chair. With your left hand, grip the edge of the seat beneath you — this is the anchor that keeps the shoulder down.",
+    "Tilt the head to the right (right ear toward right shoulder), without raising the left shoulder. The movement comes from the neck, not the trunk.",
+    "With the right hand, apply gentle pressure on top of the head to deepen the stretch. Don't force it — the weight of the hand is enough.",
+    "Feel the stretch along the entire left side of the neck toward the shoulder. Breathe deeply: on the exhale, let yourself sink slightly deeper.",
+    "Hold 30–40 seconds, without moving the anchored shoulder. Repeat on the other side. 2–3 times per side.",
   ],
   ex_wall_angels: [
-    "Stai cu spatele la perete, tălpile la 10–15 cm față de perete, genunchii ușor îndoiți. Apasă spatele, fesele și occipitalul (ceafa) de perete.",
-    "Ridică brațele în formă de W — coatele la 90°, dosul mâinilor și coatele ating peretele. Bărbia paralelă cu podeaua, nu o ridica.",
-    "Menținând contactul cu peretele (spate, coate, dosul mâinilor), glisează brațele lent în sus spre forma literei Y. Nu permite arcuirea spatelui lombar.",
-    "Dacă nu poți menține dosul mâinilor pe perete — oprește-te acolo unde pierzi contactul. NU forța mai sus; limitarea este un semnal de lucru.",
-    "Coboară lent înapoi la W. Simți contracția romboidelor și stabilizatorilor scapulari. 10 repetări lente, 2–3 serii. Calitatea > cantitatea.",
+    "Stand with your back against a wall, feet 10–15 cm from the wall, knees slightly bent. Press your back, glutes and the back of the head against the wall.",
+    "Raise your arms into a W shape — elbows at 90°, backs of hands and elbows touching the wall. Chin parallel to the floor — don't tilt it up.",
+    "Keeping contact with the wall (back, elbows, backs of hands), slowly slide the arms up into a Y shape. Do not allow the lower back to arch away from the wall.",
+    "If you cannot keep the backs of your hands on the wall — stop where contact is lost. Do NOT force higher; the limitation is your cue to work on.",
+    "Slowly return to W. Feel the rhomboids and scapular stabilisers contracting. 10 slow reps, 2–3 sets. Quality over quantity.",
   ],
   ex_levator_stretch: [
-    "Stai pe un scaun și prinde cu mâna dreaptă marginea scaunului (ancora). Aceasta menține umărul drept jos pe tot parcursul.",
-    "Rotește capul 45° spre stânga — ca și cum ai privi diagonal spre podeaua din față-stânga ta.",
-    "Din această poziție rotată, înclină ușor capul înainte-diagonal, cu bărbia coborând spre clavicula stângă. Mică mișcare — 10–15°.",
-    "Cu mâna stângă, aplică o presiune ușoară pe occipital (ceafă) pentru a adânci stretch-ul. Simți un stretch profund la baza gâtului, lateral și la unghiul intern al scapulei drepte.",
-    "Menține 30–40 secunde, respirând. Expirația adânceste stretch-ul. Repetă de cealaltă parte (schimbă ancora și direcția). 2 ori per parte.",
+    "Sit on a chair and grip the seat edge with your right hand (anchor). This keeps the right shoulder down throughout the stretch.",
+    "Rotate the head 45° to the left — as if looking diagonally at the floor in front-left of you.",
+    "From this rotated position, gently tilt the head forward-diagonally, with the chin dropping toward the left collarbone. Small movement — 10–15°.",
+    "With the left hand, apply gentle pressure on the back of the head to deepen the stretch. Feel a deep stretch at the base of the neck, laterally and at the inner corner of the right shoulder blade.",
+    "Hold 30–40 seconds, breathing. The exhale deepens the stretch. Repeat on the other side (switch anchor and direction). 2 times per side.",
   ],
   ex_doorway_chest: [
-    "Stai în ușă sau la colțul unui perete. Ridică brațul la 90° față de corp (cot la înălțimea umărului, antebraț vertical — forma literei L).",
-    "Lipește cotul și antebrațul de tocul ușii sau perete. Umărul rămâne coborât, nu ridicat.",
-    "Fă un pas mic înainte cu piciorul opus brațului întins. Simt pieptul deschizându-se și umărul trăgând înapoi.",
-    "IMPORTANT: Ține trunchiul drept și activ — nu te arcui din lombar. Stretch-ul trebuie simțit în pectoral și umărul anterior, nu în spate.",
-    "Menține 30–40 sec. Poți varia înălțimea brațului (mai sus = pectoral clavicular, mai jos = pectoral sternal) pentru stretch complet. 2–3 ori per parte.",
+    "Stand in a doorway or at a wall corner. Raise your arm to 90° from the body (elbow at shoulder height, forearm vertical — L shape).",
+    "Place the elbow and forearm against the door frame or wall. Keep the shoulder down — do not shrug.",
+    "Take a small step forward with the opposite foot. Feel the chest opening and the shoulder drawing back.",
+    "IMPORTANT: Keep the trunk straight and engaged — do not arch from the lower back. The stretch should be felt in the pectoral and front of the shoulder, not in the back.",
+    "Hold 30–40 sec. You can vary the arm height (higher = clavicular pec, lower = sternal pec) for a complete stretch. 2–3 times per side.",
   ],
   ex_cat_cow: [
-    "Pornești în patru labe: palmele direct sub umeri, genunchii direct sub șolduri. Spatele neutru — nu arcuit, nu rotunjit.",
-    "CAT (Pisica): Expiră profund și arcuiește spatele spre tavan — bărbia spre piept, coada în jos, abdomenul tras în sus. Toate vertebrele intră în flexie.",
-    "Menține Cat 2–3 secunde. Simți elongarea mușchilor paravertebrali și lărgirea articulațiilor vertebrale. Expiria completă intensifică flexia.",
-    "COW (Vaca): Inspiră și lasă spatele să coboare — burta spre podea, capul și coada ridicată, omoplații apropiați. Extensia completă a coloanei.",
-    "Menține Cow 2–3 secunde. Alternează Cat–Cow lent și continuu, 10–15 repetări. Sincronizează perfect cu respirația: expir = Cat, inspir = Cow.",
+    "Start on all fours: palms directly under shoulders, knees directly under hips. Back neutral — not arched, not rounded.",
+    "CAT: Exhale deeply and round the back toward the ceiling — chin to chest, tailbone down, abdomen drawn in. All vertebrae enter flexion.",
+    "Hold Cat for 2–3 seconds. Feel the paraspinal muscles lengthening and the vertebral joints widening. A complete exhale intensifies the flexion.",
+    "COW: Inhale and let the back drop — belly toward the floor, head and tailbone lifted, shoulder blades together. Full spinal extension.",
+    "Hold Cow for 2–3 seconds. Alternate Cat–Cow slowly and continuously, 10–15 reps. Perfectly synchronise with breathing: exhale = Cat, inhale = Cow.",
   ],
   ex_child_pose: [
-    "Pornești în patru labe. Deschide genunchii la lățimea șoldurilor sau mai larg (varianta wide child's pose pentru mobilitate șold).",
-    "Împinge fesele lent spre călcâie, menținând brațele extinse înainte pe podea. Fruntea atinge sau se apropie de podea.",
-    "Relaxează complet umerii — lasă-i să cadă spre podea. Simți elongarea întregii regiuni dorsale și lombare.",
-    "Respiră adânc și lent: la INSPIR simți cum spatele se lărgește lateral (expansiune costală posterioară). La EXPIR, te lași mai profund în poziție.",
-    "Menține 1–2 minute. Nu este un exercițiu de forță — este de decompresie activă. Poți pune o pernă între fese și călcâie dacă nu ajungi complet jos.",
+    "Start on all fours. Open the knees to hip-width or wider (wide child's pose variant for hip mobility).",
+    "Slowly push the hips back toward the heels, keeping the arms extended forward on the floor. Forehead touches or approaches the floor.",
+    "Fully relax the shoulders — let them fall toward the floor. Feel the stretch along the entire upper and lower back.",
+    "Breathe deeply and slowly: on the INHALE feel the back widening laterally (posterior rib expansion). On the EXHALE, sink deeper into the position.",
+    "Hold 1–2 minutes. This is not a strength exercise — it is active decompression. You can place a pillow between the hips and heels if you cannot reach fully down.",
   ],
   ex_dead_bug: [
-    "Stai pe spate pe o suprafață fermă. Ridică brațele vertical spre tavan, genunchii îndoiți la 90° cu tibiile paralele cu podeaua (table-top position).",
-    "Activează core-ul: apasă zona lombară COMPLET spre podea — nu trebuie să existe spațiu între spate și podea. Menține pe tot parcursul exercițiului.",
-    "Expiră lent (4–5 sec) și coboară SIMULTAN brațul drept deasupra capului spre podea și piciorul STÂNG spre podea — fără să atingi solul. Coboară doar atât cât spatele rămâne lipit de podea.",
-    "Inspiră și revino la centru (table-top). Repetă cu brațul STÂNG și piciorul DREPT. Mișcarea este lentă și controlată — nu dinamică.",
-    "GREȘEALA frecventă: arcuirea spatelui la coborârea membrelor. Dacă se întâmplă, reduce amplitudinea. 8–10 repetări per parte, 2–3 serii.",
+    "Lie on your back on a firm surface. Raise the arms vertically toward the ceiling, knees bent at 90° with shins parallel to the floor (table-top position).",
+    "Engage the core: press the lower back COMPLETELY into the floor — there should be no gap between your back and the floor. Maintain this throughout.",
+    "Exhale slowly (4–5 sec) and SIMULTANEOUSLY lower the right arm overhead toward the floor and the LEFT leg toward the floor — without touching. Only lower as far as the back stays flat.",
+    "Inhale and return to centre (table-top). Repeat with the LEFT arm and RIGHT leg. The movement is slow and controlled — not dynamic.",
+    "COMMON MISTAKE: the back arching as the limbs lower. If this happens, reduce the range. 8–10 reps per side, 2–3 sets.",
   ],
   ex_glute_bridge: [
-    "Stai pe spate, genunchii îndoiți la aproximativ 90°, tălpile pe podea la lățimea șoldurilor. Brațele pe lângă corp, palmele în jos.",
-    "Activează core-ul și contractă fesele înainte de a ridica. Imaginati-va ca 'strangi o nuca' cu fesele.",
-    "Împinge prin tălpi și ridică bazinul spre tavan, formând o linie dreaptă umăr–șold–genunchi. NU hiperestinde lombar.",
-    "Menține 2–3 secunde în poziția superioară cu fesele contractate maximal. Respiră normal — nu reține respirația.",
-    "Coboară vertebră cu vertebră: lombarul, apoi dorsalul, apoi fesele. Controlat, lent — nu cădere liberă. 12–15 repetări, 3 serii.",
+    "Lie on your back, knees bent to about 90°, feet flat on the floor at hip width. Arms at your sides, palms facing down.",
+    "Engage the core and squeeze the glutes before lifting. Imagine 'squeezing a walnut' with your glutes.",
+    "Push through the feet and raise the hips toward the ceiling, forming a straight line from shoulder to hip to knee. Do NOT hyperextend the lower back.",
+    "Hold 2–3 seconds at the top with the glutes maximally contracted. Breathe normally — do not hold your breath.",
+    "Lower vertebra by vertebra: lumbar, then thoracic, then glutes. Controlled and slow — not a free drop. 12–15 reps, 3 sets.",
   ],
   ex_clamshell: [
-    "Stai pe o parte, genunchii îndoiți la aproximativ 45°, șoldurile una direct deasupra celeilalte. Capul sprijinit pe braț.",
-    "Tălpile rămân LIPITE una de alta pe tot parcursul exercițiului. Asigură-te că bazinul nu se rotește înapoi la ridicare.",
-    "Menținând tălpile lipite, ridică genunchiul de deasupra cât poți de sus — rotind din șold. Mișcarea vine exclusiv din articulația șoldului, nu din rotația bazinului.",
-    "Menține 1–2 secunde în vârf. Simți contracția intensă în gluteul mediu (lateralul superior al fesei). Dacă nu simți acolo, bazinul se rotește.",
-    "Coboară lent, controlat. 15–20 repetări per parte, 3 serii. Poți adăuga o bandă elastică deasupra genunchilor pentru progresie.",
+    "Lie on your side, knees bent to about 45°, hips stacked directly on top of each other. Head resting on the arm.",
+    "Keep the feet TOGETHER throughout the exercise. Make sure the pelvis does not rotate backward on the lift.",
+    "Keeping the feet together, raise the top knee as high as possible — rotating from the hip. The movement comes exclusively from the hip joint, not from pelvic rotation.",
+    "Hold 1–2 seconds at the top. Feel the intense contraction in the gluteus medius (upper-outer area of the buttock). If you don't feel it there, the pelvis is rotating.",
+    "Lower slowly and in control. 15–20 reps per side, 3 sets. You can add a resistance band above the knees for progression.",
   ],
   ex_piriformis_stretch: [
-    "Stai pe spate cu ambii genunchi îndoiți, tălpile pe podea. Pune glezna piciorului DREPT pe coapsa piciorului STÂNG (lângă genunchi) — forma cifrei 4.",
-    "Flexează activ glezna dreaptă (trage vârful piciorului drept spre tine). Aceasta protejează genunchiul drept pe toată durata stretch-ului.",
-    "Ridică piciorul STÂNG de pe podea și trage coapsa stângă spre piept cu ambele mâini (sau cu o bandă). Simți stretch-ul adânc în fesa dreaptă.",
-    "Menține 30–60 secunde, respirând profund. La expirație te lași ușor mai adânc. Nu forța — piriformisul este adânc și reacționează prost la stretch agresiv.",
-    "Repetă de cealaltă parte. 2–3 ori per parte. Dacă simți amorțeală sau durere iradiată, reduce intensitatea.",
+    "Lie on your back with both knees bent, feet flat on the floor. Place the RIGHT ankle on the LEFT thigh (near the knee) — figure-4 shape.",
+    "Actively flex the right ankle (pull the right foot toward you). This protects the right knee throughout the stretch.",
+    "Lift the LEFT foot off the floor and pull the left thigh toward the chest with both hands (or with a strap). Feel the deep stretch in the right glute.",
+    "Hold 30–60 seconds, breathing deeply. On each exhale, sink slightly deeper. Do not force it — the piriformis is deep and responds poorly to aggressive stretching.",
+    "Repeat on the other side. 2–3 times per side. If you feel numbness or referred pain, reduce the intensity.",
   ],
   ex_figure4: [
-    "Stai pe un scaun sau pe podea. Încrucișează glezna dreaptă pe genunchiul stâng (figura 4). Flexează glezna dreaptă pentru a proteja genunchiul.",
-    "Ține trunchiul drept și aplecă-te ușor înainte din șolduri (nu rotunjind spatele) — simți cum stretch-ul apare în fesa dreaptă.",
-    "Alternativ pe podea: stai pe spate, ridică ambele picioare, și cu mâinile trage coapsa piciorului de jos spre tine.",
-    "Menține 30–45 secunde per parte. Respiră constant — expirul adâncește stretch-ul fesier.",
-    "Stretch-ul trebuie simțit EXCLUSIV în fesă (gluteus medius, piriformis). Dacă simți durere în genunchi, oprește-te imediat.",
+    "Sit on a chair or lie on the floor. Cross the right ankle over the left knee (figure-4). Flex the right ankle to protect the knee.",
+    "Keep the trunk straight and lean slightly forward from the hips (without rounding the back) — feel the stretch appearing in the right glute.",
+    "Floor alternative: lie on your back, raise both legs, and with your hands pull the thigh of the lower leg toward you.",
+    "Hold 30–45 seconds per side. Breathe steadily — the exhale deepens the glute stretch.",
+    "The stretch should be felt ONLY in the glute (gluteus medius, piriformis). If you feel pain in the knee, stop immediately.",
   ],
   ex_hamstring_stretch: [
-    "Stai pe spate pe o suprafață fermă. Îndoaie genunchiul STÂNG cu talpa pe podea — acesta menține stabilitatea lombară.",
-    "Ridică piciorul DREPT extins. Ținând din spatele coapsei cu ambele mâini (sau cu un prosop/bandă în jurul labei piciorului), trage piciorul spre tine.",
-    "Menține genunchiul drept cât mai extins posibil, dar nu forța extensia completă. Un unghi de 70–80° față de podea este suficient.",
-    "Simți stretch-ul în tot spatele coapsei (hamstrings). Nu arcui spatele lombar — dacă se arcuiește, reduce amplitudinea.",
-    "Menține 30–40 secunde, respirând. Repetă 2–3 ori per parte. Variante: stretch în picioare cu piciorul pe un scaun (mai practic în pauze de birou).",
+    "Lie on your back on a firm surface. Bend the LEFT knee with the foot flat on the floor — this maintains lumbar stability.",
+    "Raise the RIGHT leg extended. Holding the back of the thigh with both hands (or a towel/strap around the foot), draw the leg toward you.",
+    "Keep the right knee as straight as possible, but do not force full extension. An angle of 70–80° from the floor is sufficient.",
+    "Feel the stretch along the entire back of the thigh (hamstrings). Do not arch the lower back — if it arches, reduce the range.",
+    "Hold 30–40 seconds, breathing. Repeat 2–3 times per side. Alternative: standing stretch with foot on a chair (more practical during desk breaks).",
   ],
   ex_calf_stretch: [
-    "Stai în fața unui perete, cu palmele sprijinite pe perete. Fă un pas înapoi cu piciorul drept, călcâiul DREPT rămâne pe podea.",
-    "GASTROCNEMIAN: Ține genunchiul drept complet extins (drept). Înclină-te ușor spre perete — simți stretch-ul puternic în vârful gambei. Menține 30 sec.",
-    "SOLEAR (mai profund): Din aceeași poziție, îndoaie ușor genunchiul drept, menținând călcâiul pe podea. Stretch-ul se mută mai jos, spre gleznă. Menține 30 sec.",
-    "Totalul: 30 sec gastrocnemian + 30 sec solear = 1 minut per picior. Fă 2–3 serii per picior.",
-    "Regula de aur: CĂLCÂIUL RĂMÂNE TOT TIMPUL PE PODEA. Ridicarea călcâiului anulează complet stretch-ul. Dacă nu poți, apropie piciorul de perete.",
+    "Stand facing a wall with palms resting on it. Step back with the right foot, keeping the RIGHT heel on the floor.",
+    "GASTROCNEMIUS: Keep the right knee fully straight. Lean gently toward the wall — feel the strong stretch in the upper calf. Hold 30 sec.",
+    "SOLEUS (deeper): From the same position, slightly bend the right knee, keeping the heel on the floor. The stretch moves lower, toward the ankle. Hold 30 sec.",
+    "Total: 30 sec gastrocnemius + 30 sec soleus = 1 minute per foot. Do 2–3 sets per foot.",
+    "Golden rule: THE HEEL STAYS ON THE FLOOR AT ALL TIMES. Raising the heel completely cancels the stretch. If you cannot keep it down, move the foot closer to the wall.",
   ],
   default: [
-    "Pregătește un spațiu liber și confortabil, fără obstacole în jur.",
-    "Execută mișcarea lent și controlat — nu în viteză. Controlul > amplitudinea.",
-    "Menține poziția conform duratei indicate, respirând uniform și profund.",
-    "La expirație, lasă-te ușor mai adânc în poziție (pentru stretch) sau menține contracția (pentru exerciții de activare).",
-    "Repetă de 2–3 ori pentru rezultate optime. Dacă simți durere ascuțită, oprește-te imediat.",
+    "Prepare a clear and comfortable space with no obstacles around you.",
+    "Perform the movement slowly and in control — not with speed. Control beats range.",
+    "Hold the position for the indicated duration, breathing evenly and deeply.",
+    "On the exhale, let yourself sink slightly deeper into the position (for stretches) or maintain the contraction (for activation exercises).",
+    "Repeat 2–3 times for best results. If you feel sharp pain, stop immediately.",
   ],
 };
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
+const [startTime] = useState<number>(Date.now());
   const [currentStep, setCurrentStep] = useState(0);
   const [started, setStarted] = useState(false);
 
@@ -158,7 +162,7 @@ export default function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <View style={styles.root}>
-        <Text style={{ color: C.text, padding: 24 }}>Exercițiu negăsit.</Text>
+        <Text style={{ color: C.text, padding: 24 }}>Exercise not found.</Text>
       </View>
     );
   }
@@ -188,7 +192,7 @@ export default function ExerciseDetailScreen() {
         {/* ── Benefit text ── */}
         {!!benefit && (
           <View style={styles.benefitBox}>
-            <Text style={styles.benefitLabel}>De ce funcționează</Text>
+            <Text style={styles.benefitLabel}>Why it works</Text>
             <Text style={styles.benefitText}>{benefit}</Text>
           </View>
         )}
@@ -197,7 +201,7 @@ export default function ExerciseDetailScreen() {
       {/* ── Steps ───────────────────────────────────────── */}
       {!started ? (
         <Button
-          label="▶  Începe exercițiul"
+          label="▶  Start exercise"
           onPress={() => setStarted(true)}
         />
       ) : (
@@ -207,7 +211,7 @@ export default function ExerciseDetailScreen() {
             <View style={[styles.progressFill, { width: `${progress}%` }]} />
           </View>
           <Text style={styles.progressLabel}>
-            Pas {currentStep + 1} din {steps.length}
+            Step {currentStep + 1} of {steps.length}
           </Text>
 
           {/* Current step */}
@@ -223,35 +227,53 @@ export default function ExerciseDetailScreen() {
               onPress={() => setCurrentStep((s) => s - 1)}
               style={[styles.navBtn, currentStep === 0 && { opacity: 0.3 }]}
             >
-              <Text style={styles.navBtnText}>← Înapoi</Text>
+              <Text style={styles.navBtnText}>← Back</Text>
             </TouchableOpacity>
 
             {currentStep < steps.length - 1 ? (
-              <TouchableOpacity
-                onPress={() => setCurrentStep((s) => s + 1)}
-                style={[styles.navBtn, styles.navBtnPrimary]}
-              >
-                <Text style={[styles.navBtnText, { color: "#fff" }]}>
-                  Înainte →
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={[styles.navBtn, { backgroundColor: C.green }]}
-              >
-                <Text style={[styles.navBtnText, { color: "#fff" }]}>
-                  ✅ Finalizat!
-                </Text>
-              </TouchableOpacity>
-            )}
+  <TouchableOpacity
+    onPress={() => setCurrentStep((s) => s + 1)}
+    style={[styles.navBtn, styles.navBtnPrimary]}
+  >
+    <Text style={[styles.navBtnText, { color: "#fff" }]}>
+      Next →
+    </Text>
+  </TouchableOpacity>
+) : (
+  <TouchableOpacity
+    onPress={async () => {
+      // Calculate duration in seconds
+      const durationSec = Math.round((Date.now() - startTime) / 1000);
+
+      // Log exercise to Supabase
+      if (user) {
+        try {
+          await logExercise(user.id, {
+            exercise_id:   exercise.id,
+            exercise_name: exercise.name,
+            duration_sec:  durationSec,
+          });
+        } catch (err) {
+          console.error('Failed to log exercise:', err);
+        }
+      }
+
+      router.back();
+    }}
+    style={[styles.navBtn, { backgroundColor: C.green }]}
+  >
+    <Text style={[styles.navBtnText, { color: "#fff" }]}>
+      ✅ Done!
+    </Text>
+  </TouchableOpacity>
+)}
           </View>
         </Card>
       )}
 
       {/* ── All steps preview ───────────────────────────── */}
       <Card>
-        <Text style={styles.cardTitle}>Toți pașii</Text>
+        <Text style={styles.cardTitle}>All steps</Text>
         {steps.map((s, i) => (
           <View
             key={i}

@@ -312,9 +312,7 @@ export function RegionList({
               <Text style={styles.regionSub}>{r.tp} trigger points</Text>
             </View>
 
-            <View style={styles.regionEmojiWrap}>
-              <Text style={styles.regionEmoji}>{r.emoji}</Text>
-            </View>
+            
           </TouchableOpacity>
         );
       })}
@@ -346,7 +344,7 @@ export function BodyViewTabs({
             activeOpacity={0.85}
           >
             <Text style={[styles.tabText, active && styles.tabTextActive]}>
-              {tab === "front" ? "Față" : "Spate"}
+              {tab === "front" ? "Front" : "Back"}
             </Text>
           </TouchableOpacity>
         );

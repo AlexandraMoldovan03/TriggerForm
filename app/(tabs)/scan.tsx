@@ -75,7 +75,7 @@ export default function ScanScreen() {
 
     const response = await requestPermission();
     if (!response.granted) {
-      Alert.alert("Permisiune necesară", "Trebuie să permiți accesul la cameră.");
+      Alert.alert("Permission required", "Camera access is needed to scan your posture.");
       return false;
     }
 
@@ -91,7 +91,7 @@ export default function ScanScreen() {
     if (!ok) return;
 
     if (!cameraRef.current) {
-      Alert.alert("Eroare", "Camera nu este gata.");
+      Alert.alert("Error", "Camera is not ready.");
       return;
     }
 
@@ -114,7 +114,7 @@ export default function ScanScreen() {
 
   const takeAndAnalyze = async () => {
     if (!cameraRef.current) {
-      Alert.alert("Eroare", "Camera nu este gata.");
+      Alert.alert("Error", "Camera is not ready.");
       return;
     }
 
@@ -150,15 +150,15 @@ export default function ScanScreen() {
         const detail =
           typeof data?.detail === "string"
             ? data.detail
-            : "Nu am putut analiza poza.";
+            : "Could not analyze the photo.";
         throw new Error(detail);
       }
 
       setResult(data.result);
     } catch (error: any) {
       Alert.alert(
-        "Eroare analiză",
-        error?.message || "Nu am putut analiza poza."
+        "Analysis error",
+        error?.message || "Could not analyze the photo."
       );
     } finally {
       setLoading(false);
@@ -179,8 +179,8 @@ export default function ScanScreen() {
 
   const instructions =
     viewMode === "front"
-      ? "Pune telefonul pe un suport. Stai drept la 2–3m. Trebuie să se vadă capul, trunchiul și bazinul."
-      : "Pune telefonul pe un suport. Stai complet din profil la 2–3m. Trebuie să se vadă urechea, umărul, șoldul, genunchiul și glezna.";
+      ? "Place the phone on a stand. Stand straight 2–3 m away. Head, torso and hips must be fully visible."
+      : "Place the phone on a stand. Stand completely sideways 2–3 m away. Ear, shoulder, hip, knee and ankle must be visible.";
 
 
 
@@ -253,48 +253,48 @@ export default function ScanScreen() {
           ) : (
             <View style={styles.cameraPlaceholder}>
               <Text style={{ fontSize: 40 }}>📷</Text>
-              <Text style={styles.placeholderText}>Camera inactivă</Text>
+              <Text style={styles.placeholderText}>Camera inactive</Text>
             </View>
           )}
 
           <View style={styles.topRow}>
             <TouchableOpacity style={styles.smallBtn} onPress={toggleFacing}>
               <Text style={styles.smallBtnText}>
-                {facing === "back" ? "🔄 Față" : "🔄 Spate"}
+                {facing === "back" ? "🔄 Front" : "🔄 Back"}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.bottomBar}>
             <Text style={styles.bottomBarText}>
-              Mod: {viewMode === "front" ? "Frontal" : "Lateral"}
+              Mode: {viewMode === "front" ? "Front" : "Side"}
             </Text>
           </View>
         </View>
 
         <Card style={{ marginTop: 16 }}>
-          <Text style={styles.title}>Tip analiză</Text>
+          <Text style={styles.title}>Analysis type</Text>
 
           <View style={styles.row}>
             <TouchableOpacity
               style={[styles.toggle, viewMode === "front" && styles.toggleActive]}
               onPress={() => setViewMode("front")}
             >
-              <Text style={styles.toggleText}>Frontal</Text>
+              <Text style={styles.toggleText}>Front</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.toggle, viewMode === "side" && styles.toggleActive]}
               onPress={() => setViewMode("side")}
             >
-              <Text style={styles.toggleText}>Lateral</Text>
+              <Text style={styles.toggleText}>Side</Text>
             </TouchableOpacity>
           </View>
 
           {viewMode === "side" && (
             <>
               <Text style={[styles.title, { marginTop: 12 }]}>
-                Partea fotografiată
+                Side photographed
               </Text>
 
               <View style={styles.row}>
@@ -302,20 +302,20 @@ export default function ScanScreen() {
                   style={[styles.toggle, sideHint === "left" && styles.toggleActive]}
                   onPress={() => setSideHint("left")}
                 >
-                  <Text style={styles.toggleText}>Stânga</Text>
+                  <Text style={styles.toggleText}>Left</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.toggle, sideHint === "right" && styles.toggleActive]}
                   onPress={() => setSideHint("right")}
                 >
-                  <Text style={styles.toggleText}>Dreapta</Text>
+                  <Text style={styles.toggleText}>Right</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
 
-          <Text style={[styles.title, { marginTop: 12 }]}>Timer captură</Text>
+          <Text style={[styles.title, { marginTop: 12 }]}>Capture timer</Text>
 
           <View style={styles.row}>
             <TouchableOpacity
@@ -336,10 +336,10 @@ export default function ScanScreen() {
           <Button
             label={
               countdown !== null
-                ? `Captură în ${countdown}...`
+                ? `Capturing in ${countdown}...`
                 : loading
-                ? "Analizez..."
-                : "📸 Capturează și analizează"
+                ? "Analyzing..."
+                : "📸 Capture & Analyze"
             }
             onPress={startCountdownAndCapture}
             color={C.blue}
@@ -347,15 +347,15 @@ export default function ScanScreen() {
           />
 
           <Text style={styles.helperText}>
-            Nu ține telefonul în mână pentru analiza completă. Pune-l sprijinit
-            și folosește timerul.
+            Don't hold the phone while scanning. Place it on a surface and use
+            the timer for the best results.
           </Text>
 
           {loading && (
             <View style={{ marginTop: 12, alignItems: "center" }}>
               <ActivityIndicator />
               <Text style={{ color: C.textMuted, marginTop: 8 }}>
-                Trimit imaginea la server...
+                Sending image to server...
               </Text>
             </View>
           )}
@@ -363,30 +363,30 @@ export default function ScanScreen() {
 
         {result && (
           <Card style={{ marginTop: 10 }}>
-            <Text style={styles.title}>Rezultat</Text>
+            <Text style={styles.title}>Results</Text>
 
             <Text style={styles.summary}>{result.summary}</Text>
 
             <Text style={styles.metric}>
-              Corp suficient de vizibil: {result.body_visible_enough ? "da" : "nu"}
+              Body visible enough: {result.body_visible_enough ? "yes" : "no"}
             </Text>
             <Text style={styles.metric}>
-              Vedere detectată: {result.view_detected}
+              View detected: {result.view_detected}
             </Text>
             <Text style={styles.metric}>
-              Umeri: {result.shoulder_alignment}
+              Shoulders: {result.shoulder_alignment}
             </Text>
             <Text style={styles.metric}>
-              Bazin: {result.hip_alignment}
+              Hips: {result.hip_alignment}
             </Text>
             <Text style={styles.metric}>
-              Cap înainte: {result.forward_head}
+              Forward head: {result.forward_head}
             </Text>
             <Text style={styles.metric}>
-              Rotunjire toracică: {result.thoracic_rounding}
+              Thoracic rounding: {result.thoracic_rounding}
             </Text>
             <Text style={styles.metric}>
-              Înclinare pelvis: {result.pelvic_tilt}
+              Pelvic tilt: {result.pelvic_tilt}
             </Text>
             <Text style={styles.metric}>
               Swayback: {result.swayback_pattern}
@@ -397,7 +397,7 @@ export default function ScanScreen() {
 
             <Text style={styles.disclaimer}>{result.user_guidance}</Text>
 
-            <Text style={[styles.title, { marginTop: 12 }]}>Sfaturi</Text>
+            <Text style={[styles.title, { marginTop: 12 }]}>Tips</Text>
             {result.posture_tips?.map((tip, index) => (
               <Text key={index} style={styles.metric}>
                 • {tip}
@@ -405,7 +405,7 @@ export default function ScanScreen() {
             ))}
 
             <Text style={[styles.title, { marginTop: 12 }]}>
-              Exerciții recomandate
+              Recommended exercises
             </Text>
             {result.recommended_exercises?.map((exercise, index) => {
               const exId = findExerciseId(exercise.title);
@@ -430,7 +430,7 @@ export default function ScanScreen() {
                       style={[styles.exerciseStartBtn, { alignSelf: "flex-start", marginTop: 8 }]}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.exerciseStartText}>Caută în exerciții ▶</Text>
+                      <Text style={styles.exerciseStartText}>Browse exercises ▶</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -486,7 +486,7 @@ export default function ScanScreen() {
 
             {result.recommended_region !== "none" && (
               <Button
-                label="🗺️ Mergi la Body Map"
+                label="🗺️ Go to Body Map"
                 onPress={acceptRegion}
                 style={{ marginTop: 10 }}
               />

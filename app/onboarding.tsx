@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import { useOnboarding } from '../src/context/OnBoardingContext';
 import { supabase } from '../src/lib/supabase';
+import { saveProfile } from '../src/lib/db';
+import { Alert } from 'react-native';
 
 const PAIN_AREAS = [
   'Neck', 'Upper back', 'Lower back', 'Shoulders',
@@ -44,23 +46,32 @@ export default function OnboardingScreen() {
   };
 
   const handleFinish = async () => {
-    setLoading(true);
-    // Save profile to Supabase
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').upsert({
-        id:             user.id,
-        name,
-        pain_areas:     painAreas,
-        goals,
-        activity_level: activityLevel,
-        updated_at:     new Date().toISOString(),
-      });
+  if (!activityLevel) return;
+  setLoading(true);
+
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.user) {
+      Alert.alert('Eroare', 'Sesiune invalidă. Loghează-te din nou.');
+      setLoading(false);
+      return;
     }
+
+    await saveProfile(session.user.id, {
+      name:           name.trim(),
+      pain_areas:     painAreas,
+      goals,
+      activity_level: activityLevel,
+    });
+
     await completeOnboarding();
-    setLoading(false);
-    // NavigationGuard in _layout.tsx handles redirect to (tabs)
-  };
+  } catch (err: any) {
+    Alert.alert('Eroare la salvare', err.message);
+  }
+
+  setLoading(false);
+};
 
   const steps = [
     // Step 0 — Name

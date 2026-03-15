@@ -24,7 +24,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title:      "Acasă",
+          title:      "Home",
           tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} />,
           headerTitle: "TriggerForm",
           headerLeft: () => <HeaderLogo />,
@@ -33,33 +33,33 @@ export default function TabLayout() {
       <Tabs.Screen
         name="scan"
         options={{
-          title:      "Scanare",
+          title:      "Scan",
           tabBarIcon: ({ color }) => <TabIcon emoji="📷" color={color} />,
-          headerTitle: "Scanner Corp",
-        }}
-      />
-      <Tabs.Screen
-        name="/(auth)/login"
-        options={{
-          title:      "Login",
-          tabBarIcon: ({ color }) => <TabIcon emoji="📷" color={color} />,
-          headerTitle: "Scanner Corp",
+          headerTitle: "Body Scanner",
         }}
       />
       <Tabs.Screen
         name="exercises"
         options={{
-          title:      "Exerciții",
+          title:      "Exercises",
           tabBarIcon: ({ color }) => <TabIcon emoji="🧘" color={color} />,
-          headerTitle: "Exerciții & Recuperare",
+          headerTitle: "Exercises & Recovery",
+        }}
+      />
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          title:      "Nutrition",
+          tabBarIcon: ({ color }) => <TabIcon emoji="🥗" color={color} />,
+          headerTitle: "Nutrition",
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title:      "Profil",
+          title:      "Profile",
           tabBarIcon: ({ color }) => <TabIcon emoji="👤" color={color} />,
-          headerTitle: "Profilul Meu",
+          headerTitle: "My Profile",
         }}
       />
     </Tabs>

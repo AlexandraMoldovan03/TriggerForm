@@ -25,22 +25,24 @@ import type { BodyRegionId, BodyView } from "../../src/types";
 import { analyzePain } from "../../src/utils/painAnalysis";
 import type { PainSuggestion } from "../../src/utils/painAnalysis";
 
-// confidence badge colors
 const CONFIDENCE_COLOR: Record<PainSuggestion["confidence"], string> = {
-  high:   C.accent,
+  high: C.accent,
   medium: C.amber,
-  low:    C.green,
+  low: C.green,
 };
+
 const CONFIDENCE_LABEL: Record<PainSuggestion["confidence"], string> = {
-  high:   "Probabil",
-  medium: "Posibil",
-  low:    "Mai puțin probabil",
+  high: "Likely",
+  medium: "Possible",
+  low: "Less likely",
 };
 
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedView, setSelectedView] = useState<BodyView>("back");
-  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
+  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(
+    null
+  );
 
   const {
     selectedRegion,
@@ -59,12 +61,13 @@ export default function HomeScreen() {
     setIsAnalyzing,
   } = useAppStore();
 
-  // ── pain analysis handler ───────────────────────────────────────────────
   const handleAnalyze = async () => {
     if (!painQuery.trim()) return;
+
     Keyboard.dismiss();
     setIsAnalyzing(true);
     setPainSuggestions([]);
+
     try {
       const results = await analyzePain(painQuery);
       setPainSuggestions(results);
@@ -76,11 +79,12 @@ export default function HomeScreen() {
   const handleSuggestionTap = (s: PainSuggestion) => {
     setSelectedView(s.view);
     setSelectedRegion(s.regionId);
+    setSelectedSubRegion(null);
+    setSelectedTP(null);
   };
 
   const regionData = REGIONS.find((r) => r.id === selectedRegion);
 
-  // Filter TPs: by region + view, then optionally by sub-region
   const tps = selectedRegion
     ? TRIGGER_POINTS.filter(
         (tp) =>
@@ -95,10 +99,64 @@ export default function HomeScreen() {
 
   const handleRegionSelect = (id: BodyRegionId) => {
     setSelectedRegion(id === selectedRegion ? null : id);
+    setSelectedSubRegion(null);
     setSelectedTP(null);
   };
 
   const subRegions = regionData?.subRegions ?? [];
+
+  const getPainLevelInfo = (level: number) => {
+    if (level <= 3) {
+      return {
+        title: "Mild pain",
+        color: C.green,
+        emoji: "🟢",
+        summary:
+          "This looks more like local tension or a mild irritation. Usually responds well to gentle mobility work, controlled self-massage and monitoring.",
+        guidance: [
+          "Start with light pressure on trigger points — not aggressively.",
+          "Choose gentle stretching and simple mobility exercises.",
+          "If pain increases after massage, reduce intensity or duration.",
+        ],
+        warning:
+          "If the pain persists for several days, starts to radiate or becomes more frequent, it is worth re-evaluating.",
+      };
+    }
+
+    if (level <= 6) {
+      return {
+        title: "Moderate pain",
+        color: C.amber,
+        emoji: "🟠",
+        summary:
+          "You may have an active trigger point or a clearly overloaded area. Careful dosing of pressure and exercises is needed.",
+        guidance: [
+          "Use progressive pressure — not sudden or very deep massage.",
+          "Combine massage with mobility work and recovery breaks.",
+          "Focus on the source area, not just where you feel the pain.",
+        ],
+        warning:
+          "If the pain limits movement, returns frequently or numbness appears, consult a specialist.",
+      };
+    }
+
+    return {
+      title: "Severe pain",
+      color: C.accent,
+      emoji: "🔴",
+      summary:
+        "The pain is intense enough that self-treatment must be done carefully. There may be significant irritation, postural compensation or referred pain.",
+      guidance: [
+        "Do not start with heavy pressure on trigger points.",
+        "Prioritise gentle techniques, breathing and light exercises.",
+        "Avoid forcing stretching while in intense pain.",
+      ],
+      warning:
+        "If the pain is strong, worsening, radiating into the arm or leg, or affecting daily function, specialist consultation is recommended.",
+    };
+  };
+
+  const painInfo = getPainLevelInfo(painLevel);
 
   return (
     <View style={styles.root}>
@@ -107,18 +165,17 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Card style={styles.headerCard}>
-          <Text style={styles.headerSub}>Bun venit înapoi</Text>
-          <Text style={styles.headerTitle}>Unde simți durere?</Text>
+          <Text style={styles.headerSub}>Welcome back</Text>
+          <Text style={styles.headerTitle}>Where do you feel pain?</Text>
           <Text style={styles.headerHint}>
-            Descrie durerea sau selectează zona direct pe model
+            Describe your pain or select the area directly on the body map
           </Text>
         </Card>
 
-        {/* ── PAIN DESCRIPTION CARD ─────────────────────────────────────── */}
         <Card>
-          <Text style={styles.cardTitle}>🔍 Descrie durerea</Text>
+          <Text style={styles.cardTitle}>🔍 Describe your pain</Text>
           <Text style={styles.searchHint}>
-            Ex: "durere la genunchi", "gât blocat", "spate jos după stat jos"
+            e.g. "knee pain", "stiff neck", "lower back after sitting"
           </Text>
 
           <View style={styles.searchRow}>
@@ -126,7 +183,7 @@ export default function HomeScreen() {
               style={styles.searchInput}
               value={painQuery}
               onChangeText={setPainQuery}
-              placeholder="Descrie unde și cum doare..."
+              placeholder="Describe where and how it hurts..."
               placeholderTextColor={C.textDim}
               returnKeyType="search"
               onSubmitEditing={handleAnalyze}
@@ -141,17 +198,15 @@ export default function HomeScreen() {
               {isAnalyzing ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.searchBtnText}>Analizează</Text>
+                <Text style={styles.searchBtnText}>Analyze</Text>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* ── Suggestions ── */}
           {painSuggestions.length > 0 && (
             <View style={styles.suggestionsWrap}>
-              <Text style={styles.suggestTitle}>
-                Zone sugerate pentru masaj:
-              </Text>
+              <Text style={styles.suggestTitle}>Suggested areas for massage:</Text>
+
               {painSuggestions.map((s) => {
                 const isExpanded = expandedSuggestion === s.regionId;
                 const isActive = selectedRegion === s.regionId;
@@ -165,7 +220,6 @@ export default function HomeScreen() {
                       isActive && styles.suggestionCardActive,
                     ]}
                   >
-                    {/* ── tap header: navigate to region ── */}
                     <TouchableOpacity
                       onPress={() => handleSuggestionTap(s)}
                       activeOpacity={0.8}
@@ -193,12 +247,13 @@ export default function HomeScreen() {
                             </Text>
                           </View>
                         </View>
+
                         <Text style={styles.suggestionReason}>{s.reason}</Text>
                       </View>
+
                       <Text style={styles.suggestionArrow}>→</Text>
                     </TouchableOpacity>
 
-                    {/* ── expand / collapse button ── */}
                     <TouchableOpacity
                       onPress={() =>
                         setExpandedSuggestion(isExpanded ? null : s.regionId)
@@ -207,19 +262,17 @@ export default function HomeScreen() {
                       style={styles.expandBtn}
                     >
                       <Text style={styles.expandBtnText}>
-                        {isExpanded ? "▲ Ascunde detalii" : "▼ De ce? Cum masezi?"}
+                        {isExpanded ? "▲ Hide details" : "▼ Why? How to massage?"}
                       </Text>
                     </TouchableOpacity>
 
-                    {/* ── clinical detail panel ── */}
                     {isExpanded && (
                       <View style={styles.clinicalPanel}>
-                        {/* referral pattern */}
                         <View style={styles.clinicalBlock}>
                           <View style={styles.clinicalBlockHeader}>
                             <Text style={styles.clinicalIcon}>🔬</Text>
                             <Text style={styles.clinicalBlockTitle}>
-                              Pattern de iradiere
+                              Referral pattern
                             </Text>
                           </View>
                           <Text style={styles.clinicalText}>
@@ -227,30 +280,25 @@ export default function HomeScreen() {
                           </Text>
                         </View>
 
-                        {/* divider */}
                         <View style={styles.clinicalDivider} />
 
-                        {/* massage tip */}
                         <View style={styles.clinicalBlock}>
                           <View style={styles.clinicalBlockHeader}>
                             <Text style={styles.clinicalIcon}>💆</Text>
                             <Text style={styles.clinicalBlockTitle}>
-                              Cum masezi
+                              How to massage
                             </Text>
                           </View>
-                          <Text style={styles.clinicalText}>
-                            {s.massageTip}
-                          </Text>
+                          <Text style={styles.clinicalText}>{s.massageTip}</Text>
                         </View>
 
-                        {/* navigate CTA */}
                         <TouchableOpacity
                           onPress={() => handleSuggestionTap(s)}
                           activeOpacity={0.85}
                           style={styles.clinicalCTA}
                         >
                           <Text style={styles.clinicalCTAText}>
-                            Selectează zona pe hartă →
+                            Select area on map →
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -261,15 +309,16 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {painSuggestions.length === 0 && !isAnalyzing && painQuery.trim().length > 2 && (
-            <Text style={styles.noResultsText}>
-              Nu am găsit sugestii. Încearcă termeni ca: genunchi, umăr, gât,
-              spate, gambă, fesă.
-            </Text>
-          )}
+          {painSuggestions.length === 0 &&
+            !isAnalyzing &&
+            painQuery.trim().length > 2 && (
+              <Text style={styles.noResultsText}>
+                No suggestions found. Try terms like: knee, shoulder, neck,
+                back, calf, glute.
+              </Text>
+            )}
         </Card>
 
-        {/* ── BODY MAP ─────────────────────────────────────────────────────── */}
         <Card>
           <BodyViewTabs
             selectedView={selectedView}
@@ -277,6 +326,7 @@ export default function HomeScreen() {
               if (view !== "front" && view !== "back") return;
               setSelectedView(view);
               setSelectedRegion(null);
+              setSelectedSubRegion(null);
               setSelectedTP(null);
             }}
           />
@@ -301,19 +351,18 @@ export default function HomeScreen() {
           </View>
         </Card>
 
-        {/* ── STEP 2 — WHERE EXACTLY IS THE PAIN? ─────────────────────────── */}
         {selectedRegion && subRegions.length > 0 && (
           <Card>
             <Text style={styles.cardTitle}>
-              📍 Unde exact în{" "}
+              📍 Where exactly in{" "}
               <Text style={{ color: C.accentSoft }}>{regionData?.label}</Text>?
             </Text>
+
             <Text style={styles.subRegionHint}>
-              Selectează zona specifică pentru trigger points mai precise
+              Select the specific area for more precise trigger points
             </Text>
 
             <View style={styles.subRegionRow}>
-              {/* "All" chip */}
               <TouchableOpacity
                 onPress={() => setSelectedSubRegion(null)}
                 style={[
@@ -329,7 +378,7 @@ export default function HomeScreen() {
                       styles.subRegionChipTextActive,
                   ]}
                 >
-                  Toate
+                  All
                 </Text>
               </TouchableOpacity>
 
@@ -360,7 +409,6 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            {/* Description of selected sub-region */}
             {selectedSubRegion && (
               <View style={styles.subRegionDesc}>
                 <Text style={styles.subRegionDescText}>
@@ -372,11 +420,10 @@ export default function HomeScreen() {
           </Card>
         )}
 
-        {/* ── STEP 3 — PAIN INTENSITY ──────────────────────────────────────── */}
         {selectedRegion && (
           <Card>
             <View style={styles.painRow}>
-              <Text style={styles.cardTitle}>Intensitate durere</Text>
+              <Text style={styles.cardTitle}>Pain intensity</Text>
               <Text style={[styles.painValue, { color: painColor }]}>
                 {painLevel}
                 <Text style={styles.painMax}>/10</Text>
@@ -397,19 +444,54 @@ export default function HomeScreen() {
 
             <View style={styles.painLabels}>
               <Text style={[styles.painLabel, { color: C.green }]}>
-                Ușoară
+                Mild
               </Text>
               <Text style={[styles.painLabel, { color: C.amber }]}>
-                Moderată
+                Moderate
               </Text>
               <Text style={[styles.painLabel, { color: C.accent }]}>
-                Severă
+                Severe
               </Text>
+            </View>
+
+            <View
+              style={[
+                styles.painInsightCard,
+                {
+                  backgroundColor: painInfo.color + "12",
+                  borderColor: painInfo.color + "55",
+                },
+              ]}
+            >
+              <View style={styles.painInsightHeader}>
+                <Text style={styles.painInsightEmoji}>{painInfo.emoji}</Text>
+                <Text
+                  style={[styles.painInsightTitle, { color: painInfo.color }]}
+                >
+                  {painInfo.title}
+                </Text>
+              </View>
+
+              <Text style={styles.painInsightSummary}>
+                {painInfo.summary}
+              </Text>
+
+              <View style={styles.painInsightList}>
+                {painInfo.guidance.map((item, index) => (
+                  <Text key={index} style={styles.painInsightBullet}>
+                    • {item}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.painWarningBox}>
+                <Text style={styles.painWarningTitle}>Warning</Text>
+                <Text style={styles.painWarningText}>{painInfo.warning}</Text>
+              </View>
             </View>
           </Card>
         )}
 
-        {/* ── STEP 4 — TRIGGER POINTS ──────────────────────────────────────── */}
         {tps.length > 0 && (
           <Card>
             <Text style={styles.cardTitle}>
@@ -418,9 +500,10 @@ export default function HomeScreen() {
                 ? subRegions.find((sr) => sr.id === selectedSubRegion)?.label
                 : regionData?.label}
             </Text>
+
             <Text style={styles.tpCountHint}>
               {tps.length} trigger point{tps.length !== 1 ? "s" : ""}{" "}
-              {selectedSubRegion ? "pentru zona selectată" : "în această regiune"}
+              {selectedSubRegion ? "for the selected area" : "in this region"}
             </Text>
 
             {tps.map((tp) => {
@@ -449,7 +532,9 @@ export default function HomeScreen() {
 
                   {isOpen && (
                     <View style={styles.tpDetails}>
-                      <Text style={styles.tpSectionLabel}>Durere iradiată</Text>
+                      <Text style={styles.tpSectionLabel}>
+                        Referred pain
+                      </Text>
                       <Text style={styles.tpReferred}>
                         {tp.painReferral.join(", ")}
                       </Text>
@@ -457,7 +542,7 @@ export default function HomeScreen() {
                       <Text
                         style={[styles.tpSectionLabel, { marginTop: 8 }]}
                       >
-                        Simptome frecvente
+                        Common symptoms
                       </Text>
                       <Text style={styles.tpReferred}>
                         {tp.symptoms.join(", ")}
@@ -468,7 +553,7 @@ export default function HomeScreen() {
                         style={styles.tpButton}
                       >
                         <Text style={styles.tpButtonText}>
-                          Vezi exerciții →
+                          View exercises →
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -479,7 +564,6 @@ export default function HomeScreen() {
           </Card>
         )}
 
-        {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
         <View style={styles.quickRow}>
           <TouchableOpacity
             onPress={() => router.push("/scan")}
@@ -487,8 +571,8 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.quickIcon}>📷</Text>
-            <Text style={styles.quickTitle}>Scanează corp</Text>
-            <Text style={styles.quickSub}>Analiză AI pentru postură</Text>
+            <Text style={styles.quickTitle}>Body Scan</Text>
+            <Text style={styles.quickSub}>AI-powered posture analysis</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -497,8 +581,8 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.quickIcon}>🧘</Text>
-            <Text style={styles.quickTitle}>Exerciții</Text>
-            <Text style={styles.quickSub}>Stretching & mobilitate</Text>
+            <Text style={styles.quickTitle}>Exercises</Text>
+            <Text style={styles.quickSub}>Stretching & mobility</Text>
           </TouchableOpacity>
         </View>
 
@@ -569,7 +653,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  // ── Pain search ──────────────────────────────────────────────────────────
   searchHint: {
     fontSize: 11,
     color: C.textMuted,
@@ -768,7 +851,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // ── Sub-region selection ─────────────────────────────────────────────────
   subRegionHint: {
     fontSize: 11,
     color: C.textMuted,
@@ -823,7 +905,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // ── Pain slider ──────────────────────────────────────────────────────────
   painRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -851,7 +932,70 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  // ── Trigger points ───────────────────────────────────────────────────────
+  painInsightCard: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+  },
+
+  painInsightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+
+  painInsightEmoji: {
+    fontSize: 16,
+  },
+
+  painInsightTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  painInsightSummary: {
+    fontSize: 12,
+    color: C.text,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+
+  painInsightList: {
+    gap: 6,
+    marginBottom: 10,
+  },
+
+  painInsightBullet: {
+    fontSize: 11,
+    color: C.textMuted,
+    lineHeight: 17,
+  },
+
+  painWarningBox: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  painWarningTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: C.text,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+
+  painWarningText: {
+    fontSize: 11,
+    color: C.textMuted,
+    lineHeight: 17,
+  },
+
   tpCountHint: {
     fontSize: 11,
     color: C.textMuted,
@@ -937,7 +1081,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // ── Quick actions ────────────────────────────────────────────────────────
   quickRow: {
     flexDirection: "row",
     gap: 10,
