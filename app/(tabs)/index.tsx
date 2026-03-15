@@ -5,6 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
@@ -19,10 +22,25 @@ import {
 } from "../../src/components/BodyMap";
 import { Card, SeverityDots } from "../../src/components/UI";
 import type { BodyRegionId, BodyView } from "../../src/types";
+import { analyzePain } from "../../src/utils/painAnalysis";
+import type { PainSuggestion } from "../../src/utils/painAnalysis";
+
+// confidence badge colors
+const CONFIDENCE_COLOR: Record<PainSuggestion["confidence"], string> = {
+  high:   C.accent,
+  medium: C.amber,
+  low:    C.green,
+};
+const CONFIDENCE_LABEL: Record<PainSuggestion["confidence"], string> = {
+  high:   "Probabil",
+  medium: "Posibil",
+  low:    "Mai puțin probabil",
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedView, setSelectedView] = useState<BodyView>("back");
+  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
 
   const {
     selectedRegion,
@@ -33,7 +51,32 @@ export default function HomeScreen() {
     setSelectedSubRegion,
     setPainLevel,
     setSelectedTP,
+    painQuery,
+    painSuggestions,
+    isAnalyzing,
+    setPainQuery,
+    setPainSuggestions,
+    setIsAnalyzing,
   } = useAppStore();
+
+  // ── pain analysis handler ───────────────────────────────────────────────
+  const handleAnalyze = async () => {
+    if (!painQuery.trim()) return;
+    Keyboard.dismiss();
+    setIsAnalyzing(true);
+    setPainSuggestions([]);
+    try {
+      const results = await analyzePain(painQuery);
+      setPainSuggestions(results);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSuggestionTap = (s: PainSuggestion) => {
+    setSelectedView(s.view);
+    setSelectedRegion(s.regionId);
+  };
 
   const regionData = REGIONS.find((r) => r.id === selectedRegion);
 
@@ -67,9 +110,163 @@ export default function HomeScreen() {
           <Text style={styles.headerSub}>Bun venit înapoi</Text>
           <Text style={styles.headerTitle}>Unde simți durere?</Text>
           <Text style={styles.headerHint}>
-            Selectează zona corpului, precizează locația exactă și vezi trigger
-            points-urile probabile
+            Descrie durerea sau selectează zona direct pe model
           </Text>
+        </Card>
+
+        {/* ── PAIN DESCRIPTION CARD ─────────────────────────────────────── */}
+        <Card>
+          <Text style={styles.cardTitle}>🔍 Descrie durerea</Text>
+          <Text style={styles.searchHint}>
+            Ex: "durere la genunchi", "gât blocat", "spate jos după stat jos"
+          </Text>
+
+          <View style={styles.searchRow}>
+            <TextInput
+              style={styles.searchInput}
+              value={painQuery}
+              onChangeText={setPainQuery}
+              placeholder="Descrie unde și cum doare..."
+              placeholderTextColor={C.textDim}
+              returnKeyType="search"
+              onSubmitEditing={handleAnalyze}
+              multiline={false}
+            />
+            <TouchableOpacity
+              onPress={handleAnalyze}
+              style={[styles.searchBtn, isAnalyzing && { opacity: 0.6 }]}
+              activeOpacity={0.8}
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.searchBtnText}>Analizează</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Suggestions ── */}
+          {painSuggestions.length > 0 && (
+            <View style={styles.suggestionsWrap}>
+              <Text style={styles.suggestTitle}>
+                Zone sugerate pentru masaj:
+              </Text>
+              {painSuggestions.map((s) => {
+                const isExpanded = expandedSuggestion === s.regionId;
+                const isActive = selectedRegion === s.regionId;
+                const col = CONFIDENCE_COLOR[s.confidence];
+
+                return (
+                  <View
+                    key={s.regionId}
+                    style={[
+                      styles.suggestionCard,
+                      isActive && styles.suggestionCardActive,
+                    ]}
+                  >
+                    {/* ── tap header: navigate to region ── */}
+                    <TouchableOpacity
+                      onPress={() => handleSuggestionTap(s)}
+                      activeOpacity={0.8}
+                      style={styles.suggestionHeaderRow}
+                    >
+                      <View style={styles.suggestionLeft}>
+                        <View style={styles.suggestionTopRow}>
+                          <Text style={styles.suggestionLabel}>{s.label}</Text>
+                          <View
+                            style={[
+                              styles.confidenceBadge,
+                              {
+                                backgroundColor: col + "28",
+                                borderColor: col + "66",
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.confidenceText,
+                                { color: col },
+                              ]}
+                            >
+                              {CONFIDENCE_LABEL[s.confidence]}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.suggestionReason}>{s.reason}</Text>
+                      </View>
+                      <Text style={styles.suggestionArrow}>→</Text>
+                    </TouchableOpacity>
+
+                    {/* ── expand / collapse button ── */}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setExpandedSuggestion(isExpanded ? null : s.regionId)
+                      }
+                      activeOpacity={0.75}
+                      style={styles.expandBtn}
+                    >
+                      <Text style={styles.expandBtnText}>
+                        {isExpanded ? "▲ Ascunde detalii" : "▼ De ce? Cum masezi?"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* ── clinical detail panel ── */}
+                    {isExpanded && (
+                      <View style={styles.clinicalPanel}>
+                        {/* referral pattern */}
+                        <View style={styles.clinicalBlock}>
+                          <View style={styles.clinicalBlockHeader}>
+                            <Text style={styles.clinicalIcon}>🔬</Text>
+                            <Text style={styles.clinicalBlockTitle}>
+                              Pattern de iradiere
+                            </Text>
+                          </View>
+                          <Text style={styles.clinicalText}>
+                            {s.referralPattern}
+                          </Text>
+                        </View>
+
+                        {/* divider */}
+                        <View style={styles.clinicalDivider} />
+
+                        {/* massage tip */}
+                        <View style={styles.clinicalBlock}>
+                          <View style={styles.clinicalBlockHeader}>
+                            <Text style={styles.clinicalIcon}>💆</Text>
+                            <Text style={styles.clinicalBlockTitle}>
+                              Cum masezi
+                            </Text>
+                          </View>
+                          <Text style={styles.clinicalText}>
+                            {s.massageTip}
+                          </Text>
+                        </View>
+
+                        {/* navigate CTA */}
+                        <TouchableOpacity
+                          onPress={() => handleSuggestionTap(s)}
+                          activeOpacity={0.85}
+                          style={styles.clinicalCTA}
+                        >
+                          <Text style={styles.clinicalCTAText}>
+                            Selectează zona pe hartă →
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {painSuggestions.length === 0 && !isAnalyzing && painQuery.trim().length > 2 && (
+            <Text style={styles.noResultsText}>
+              Nu am găsit sugestii. Încearcă termeni ca: genunchi, umăr, gât,
+              spate, gambă, fesă.
+            </Text>
+          )}
         </Card>
 
         {/* ── BODY MAP ─────────────────────────────────────────────────────── */}
@@ -370,6 +567,205 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: C.text,
     marginBottom: 6,
+  },
+
+  // ── Pain search ──────────────────────────────────────────────────────────
+  searchHint: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+
+  searchRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+
+  searchInput: {
+    flex: 1,
+    backgroundColor: C.surface,
+    borderWidth: 1.2,
+    borderColor: C.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    color: C.text,
+    fontSize: 13,
+  },
+
+  searchBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 96,
+  },
+
+  searchBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  suggestionsWrap: {
+    marginTop: 14,
+  },
+
+  suggestTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.textMuted,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  suggestionCard: {
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 14,
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+
+  suggestionCardActive: {
+    backgroundColor: C.accent + "18",
+    borderColor: C.accent + "60",
+  },
+
+  suggestionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+  },
+
+  suggestionLeft: {
+    flex: 1,
+    paddingRight: 8,
+  },
+
+  suggestionTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+    flexWrap: "wrap",
+  },
+
+  suggestionLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: C.text,
+  },
+
+  confidenceBadge: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+
+  confidenceText: {
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  suggestionReason: {
+    fontSize: 11,
+    color: C.textMuted,
+    lineHeight: 16,
+  },
+
+  suggestionArrow: {
+    fontSize: 16,
+    color: C.accentSoft,
+    fontWeight: "700",
+  },
+
+  expandBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+
+  expandBtnText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: C.accentSoft,
+    letterSpacing: 0.2,
+  },
+
+  clinicalPanel: {
+    backgroundColor: C.bg,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    padding: 14,
+    gap: 0,
+  },
+
+  clinicalBlock: {
+    marginBottom: 12,
+  },
+
+  clinicalBlockHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+
+  clinicalIcon: {
+    fontSize: 14,
+  },
+
+  clinicalBlockTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: C.text,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  clinicalText: {
+    fontSize: 12,
+    color: C.textMuted,
+    lineHeight: 19,
+  },
+
+  clinicalDivider: {
+    height: 1,
+    backgroundColor: C.border,
+    marginVertical: 10,
+  },
+
+  clinicalCTA: {
+    marginTop: 8,
+    backgroundColor: C.accent,
+    borderRadius: 10,
+    paddingVertical: 9,
+    alignItems: "center",
+  },
+
+  clinicalCTAText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  noResultsText: {
+    marginTop: 10,
+    fontSize: 11,
+    color: C.textDim,
+    lineHeight: 17,
+    fontStyle: "italic",
   },
 
   // ── Sub-region selection ─────────────────────────────────────────────────
